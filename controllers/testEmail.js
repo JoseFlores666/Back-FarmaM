@@ -1,21 +1,19 @@
 const nodemailer = require('nodemailer');
-require('dotenv').config(); // Para usar variables de entorno
+require('dotenv').config(); 
 
-// Configura Nodemailer con un servicio SMTP (por ejemplo, Gmail)
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // Puedes usar otros servicios o un servidor SMTP
+    service: 'gmail', 
     auth: {
-        user: process.env.EMAIL_USER, // Tu correo electrónico
-        pass: process.env.EMAIL_PASS  // Tu contraseña o token de aplicación
+        user: process.env.EMAIL_USER, 
+        pass: process.env.EMAIL_PASS  
     }
 });
 
 async function sendVerificationEmail(token, email, name) {
     try {
-        // Crear el contenido del correo
         const mailOptions = {
-            from: '"FarmaMedic" <' + process.env.EMAIL_USER + '>', // Remitente del correo
-            to: email, // Destinatario
+            from: '"FarmaMedic" <' + process.env.EMAIL_USER + '>', 
+            to: email, 
             subject: 'Verificación de Correo Electrónico',
             html: `
             <html>
@@ -64,7 +62,6 @@ async function sendVerificationEmail(token, email, name) {
             </html>`
         };
 
-        // Enviar el correo utilizando Nodemailer
         await transporter.sendMail(mailOptions);
         console.log('Correo enviado con éxito a', email);
     } catch (error) {
