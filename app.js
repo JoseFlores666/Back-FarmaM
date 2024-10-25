@@ -1,34 +1,34 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const session = require('express-session'); 
-const MySQLStore = require('express-mysql-session')(session); 
+const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const authRoutes = require('./routes/authRoutes');
 const csrfProtection = require('./middlewares/csrfMiddleware');
 const cookieParser = require('cookie-parser');
-const helmet = require('helmet'); 
-const rateLimit = require('express-rate-limit'); 
-const winston = require('winston'); 
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const winston = require('winston');
 const path = require('path');
 require('dotenv').config();
 
 const app = express();
 
 const logger = winston.createLogger({
-    level: 'error', 
+    level: 'error',
     format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.json()
     ),
     transports: [
-        new winston.transports.File({ filename: 'logs/errors.log', level: 'error' }), 
+        new winston.transports.File({ filename: 'logs/errors.log', level: 'error' }),
         new winston.transports.Console()
     ]
 });
 
 app.use(helmet());
 
-const allowedOrigins = ['https://farmamedic.vercel.app', 'https://isoftuthh.com'];
+const allowedOrigins = ['https://farmamedic.vercel.app', 'https://isoftuthh.com', 'https://back-farmam.onrender.com'];
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -38,7 +38,7 @@ app.use(cors({
             callback(new Error('Not allowed by CORS'));
         }
     },
-    credentials: true, 
+    credentials: true,
 }));
 
 
@@ -47,23 +47,23 @@ const sessionStore = new MySQLStore({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    clearExpired: true, 
-    checkExpirationInterval: 900000, 
-    expiration: 86400000, 
+    clearExpired: true,
+    checkExpirationInterval: 900000,
+    expiration: 86400000,
 });
 
 app.use(
     session({
-        key: 'sessionId', 
-        secret: process.env.SESSION_SECRET || 'yourSecret', 
+        key: 'sessionId',
+        secret: process.env.SESSION_SECRET || 'yourSecret',
         store: sessionStore,
         resave: false,
-        saveUninitialized: false, 
+        saveUninitialized: false,
         cookie: {
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', 
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'Strict',
-            maxAge: 30 * 60 * 1000, 
+            maxAge: 30 * 60 * 1000,
         },
     })
 );
@@ -76,8 +76,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    max: 300, 
+    windowMs: 15 * 60 * 1000,
+    max: 300,
     message: 'Demasiadas solicitudes desde esta IP, por favor inténtalo de nuevo más tarde.'
 });
 
@@ -88,16 +88,16 @@ app.use(csrfProtection);
 app.get('/api/csrf-token', (req, res) => {
     res.cookie('XSRF-TOKEN', req.csrfToken(), {
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production', 
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'Strict',
     });
     res.json({ csrfToken: req.csrfToken() });
 });
 
 app.use((err, req, res, next) => {
-    if (err.name === 'ForbiddenError') { 
+    if (err.name === 'ForbiddenError') {
         res.status(403).send('CSRF token inválido o faltante.');
-    } else if (err.message.includes('CORS')) { 
+    } else if (err.message.includes('CORS')) {
         res.status(403).send('Acceso denegado por políticas de CORS.');
     } else {
         logger.error({
