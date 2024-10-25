@@ -33,7 +33,7 @@ const allowedOrigins = ['https://farmamedic.vercel.app', 'https://isoftuthh.com'
 app.use(cors({
     origin: function (origin, callback) {
         if (allowedOrigins.includes(origin) || !origin) {
-            callback(null, true); 
+            callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
         }
@@ -94,22 +94,27 @@ app.get('/api/csrf-token', (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
 });
 
-
 app.use((err, req, res, next) => {
-    logger.error({
-        message: err.message,
-        stack: err.stack,
-        method: req.method,
-        url: req.originalUrl,
-        ip: req.ip
-    });
-
-    if (process.env.NODE_ENV === 'production') {
-        res.status(500).send('Ocurrió un error, por favor inténtalo de nuevo más tarde.');
+    if (err.name === 'ForbiddenError') { 
+        res.status(403).send('CSRF token inválido o faltante.');
+    } else if (err.message.includes('CORS')) { 
+        res.status(403).send('Acceso denegado por políticas de CORS.');
     } else {
-        res.status(500).send(err.stack);
+        logger.error({
+            message: err.message,
+            stack: err.stack,
+            method: req.method,
+            url: req.originalUrl,
+            ip: req.ip
+        });
+        if (process.env.NODE_ENV === 'production') {
+            res.status(500).send('Ocurrió un error, por favor inténtalo de nuevo más tarde.');
+        } else {
+            res.status(500).send(err.stack);
+        }
     }
 });
+
 
 app.use('/api', authRoutes);
 
