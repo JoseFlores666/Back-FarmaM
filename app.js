@@ -28,8 +28,16 @@ const logger = winston.createLogger({
 
 app.use(helmet());
 
+const allowedOrigins = ['https://farmamedic.vercel.app', 'https://isoftuthh.com'];
+
 app.use(cors({
-    origin: 'https://farmamedic.vercel.app',
+    origin: function (origin, callback) {
+        if (allowedOrigins.includes(origin) || !origin) {
+            callback(null, true); 
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true, 
 }));
 
