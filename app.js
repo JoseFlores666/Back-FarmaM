@@ -14,6 +14,8 @@ require('dotenv').config();
 
 const app = express();
 
+app.set('trust proxy', true); 
+
 const logger = winston.createLogger({
     level: 'error',
     format: winston.format.combine(
