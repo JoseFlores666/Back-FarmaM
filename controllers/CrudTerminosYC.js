@@ -14,12 +14,12 @@ const getTerminos = async (req, res) => {
 };
 
 const createTerminos = async (req, res) => {
-    const { termino } = req.body; // Cambiado de 'politica' a 'termino'
+    const { termino } = req.body; 
     const sql = "INSERT INTO terminos (termino) VALUES (?)";
     db.query(sql, [termino], (err, result) => {
         if (err) {
             console.error('Error al crear término:', err);
-            return res.status(500).json({ message: "Ocurrió un error inesperado" }); // Mensaje más genérico
+            return res.status(500).json({ message: "Ocurrió un error inesperado" }); 
         }
         return res.json({ success: "Término agregado correctamente", id: result.insertId });
     });

@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
-// Obtener todos los enlaces
 const getEnlaces = async (req, res) => {
     const sql = "SELECT * FROM enlaces";
     db.query(sql, (err, result) => {
@@ -14,7 +13,6 @@ const getEnlaces = async (req, res) => {
     });
 };
 
-// Crear un nuevo enlace
 const createEnlace = async (req, res) => {
     const { nombre, url } = req.body; 
     const sql = "INSERT INTO enlaces (nombre, url) VALUES (?, ?)";
@@ -27,7 +25,6 @@ const createEnlace = async (req, res) => {
     });
 };
 
-// Actualizar un enlace
 const updateEnlace = async (req, res) => {
     const { id } = req.params; 
     const { nombre, url } = req.body; 
@@ -45,7 +42,6 @@ const updateEnlace = async (req, res) => {
     });
 };
 
-// Eliminar un enlace
 const deleteEnlace = async (req, res) => {
     const id = req.params.id; 
     const sql = "DELETE FROM enlaces WHERE id = ?";

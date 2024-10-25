@@ -19,14 +19,12 @@ const getEslogan = async (req, res) => {
 const updateEslogan = (req, res) => {
     const { eslogan } = req.body;
 
-    // Verificar que eslogan no sea nulo o undefined y que sea una cadena de texto
     if (!eslogan || typeof eslogan !== 'string') {
         return res.status(400).json({ message: 'Eslogan inválido. Debe ser una cadena de texto válida.' });
     }
 
     const updateSql = "UPDATE eslogan SET eslogan = ? WHERE id = 1";
     
-    // Ejecutar la consulta con el valor del eslogan
     db.query(updateSql, [eslogan], (err) => {
         if (err) {
             console.error('Error al actualizar el eslogan:', err);

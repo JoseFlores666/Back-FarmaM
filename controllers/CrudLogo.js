@@ -3,28 +3,24 @@ const multer = require('multer');
 const path = require('path');
 const db = require('../config/db');
 
-// Configuración de multer para almacenar el archivo
 const storage = multer.diskStorage({
-    destination: path.join(__dirname, '..', 'public', 'logos'), // Carpeta donde se guardarán los logos
+    destination: path.join(__dirname, '..', 'public', 'logos'), 
     filename: (req, file, cb) => {
-        cb(null, 'Logo.png'); // Renombramos el archivo a Logo.png
+        cb(null, 'Logo.png'); 
     },
 });
 
 const upload = multer({ storage });
 
-// Función para subir el logo
 const uploadLogo = (req, res) => {
-    // Utilizamos multer para manejar la subida
     upload.single('logo')(req, res, (err) => {
         if (err) {
             console.error('Error al subir el logo:', err);
             return res.status(500).json({ message: "Error al subir el logo" });
         }
 
-        // Solo actualizamos la base de datos con la nueva ruta
-        const logoPath = '/logos/Logo.png'; // Ruta del logo
-        const updateSql = "UPDATE logos SET path = ? WHERE id = 1"; // Asegúrate de que hay un logo con id = 1
+        const logoPath = '/logos/Logo.png'; 
+        const updateSql = "UPDATE logos SET path = ? WHERE id = 1"; 
 
         db.query(updateSql, [logoPath], (err) => {
             if (err) {
@@ -36,9 +32,8 @@ const uploadLogo = (req, res) => {
     });
 };
 
-// Función para obtener el logo
 const getLogo = (req, res) => {
-    const sql = "SELECT path FROM logos WHERE id = 1"; // Asegúrate de que solo hay un logo
+    const sql = "SELECT path FROM logos WHERE id = 1"; 
     db.query(sql, (err, result) => {
         if (err) {
             console.error('Error en la consulta:', err);
@@ -51,7 +46,6 @@ const getLogo = (req, res) => {
     });
 };
 
-// Función para eliminar un logo
 const deleteLogo = (req, res) => {
     const id = req.params.id; 
     const sql = "DELETE FROM logos WHERE id = ?";

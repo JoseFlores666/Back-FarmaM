@@ -54,10 +54,8 @@ const register = async (req, res) => {
                     return res.status(500).json({ message: 'Ocurrió un error al registrar el usuario.' });
                 }
 
-                // Obtener el ID del nuevo usuario
                 const userId = userInsertResult.insertId;
 
-                // Insertar en la tabla de seguridad
                 connection.query("INSERT INTO seguridad (user_id, isVerified) VALUES (?, ?)", [userId, 0], (err) => {
                     if (err) {
                         console.error('Error al insertar en la tabla de seguridad:', err);

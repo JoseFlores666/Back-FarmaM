@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
-// Obtener los datos de contacto
 const getContactInfo = async (req, res) => {
     const sql = "SELECT * FROM datos_contacto ORDER BY id DESC LIMIT 1";
     db.query(sql, (err, result) => {
@@ -14,11 +13,9 @@ const getContactInfo = async (req, res) => {
     });
 };
 
-// Crear o actualizar los datos de contacto
 const upsertContactInfo = async (req, res) => {
     const { direccion, email, telefono } = req.body;
 
-    // Validaciones
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[0-9]{10,15}$/;
 
@@ -30,7 +27,6 @@ const upsertContactInfo = async (req, res) => {
         return res.status(400).json({ message: "Formato de número de teléfono inválido" });
     }
 
-    // Verificar si ya existen datos de contacto
     const checkSql = "SELECT * FROM datos_contacto ORDER BY id DESC LIMIT 1";
     db.query(checkSql, (err, result) => {
         if (err) {
@@ -39,7 +35,6 @@ const upsertContactInfo = async (req, res) => {
         }
 
         if (result.length > 0) {
-            // Actualizar si ya existe
             const updateSql = "UPDATE datos_contacto SET direccion = ?, email = ?, telefono = ? WHERE id = ?";
             db.query(updateSql, [direccion, email, telefono, result[0].id], (err) => {
                 if (err) {
@@ -49,7 +44,6 @@ const upsertContactInfo = async (req, res) => {
                 return res.json({ success: "Datos de contacto actualizados correctamente" });
             });
         } else {
-            // Crear si no existe
             const insertSql = "INSERT INTO datos_contacto (direccion, email, telefono) VALUES (?, ?, ?)";
             db.query(insertSql, [direccion, email, telefono], (err) => {
                 if (err) {
@@ -62,7 +56,6 @@ const upsertContactInfo = async (req, res) => {
     });
 };
 
-// Eliminar lógicamente los datos de contacto (opcional si se necesita)
 const deleteContactInfo = async (req, res) => {
     const { id } = req.params;
     const sql = "DELETE FROM datos_contacto WHERE id = ?";
@@ -78,5 +71,4 @@ const deleteContactInfo = async (req, res) => {
     });
 };
 
-// Exportar las funciones
 module.exports = { getContactInfo, upsertContactInfo, deleteContactInfo };

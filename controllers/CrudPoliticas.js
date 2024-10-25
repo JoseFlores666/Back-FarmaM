@@ -45,11 +45,9 @@ const updatePolitica = async (req, res) => {
     const { titulo, contenido, fecha_activacion } = req.body; 
 
     try {
-        // Marcar la versión actual como inactiva
         const updateCurrentSql = "UPDATE politicas SET vigencia = 'inactivo' WHERE id = ?";
         await db.query(updateCurrentSql, [id]);
 
-        // Obtener la versión actual del documento
         const getCurrentVersionSql = "SELECT version FROM politicas WHERE id = ?";
         db.query(getCurrentVersionSql, [id], (err, result) => {
             if (err) {
@@ -61,11 +59,9 @@ const updatePolitica = async (req, res) => {
                 return res.status(404).json({ message: "Documento no encontrado" });
             }
 
-            // Incrementar la versión en 1
             const currentVersion = parseFloat(result[0].version);
-            const newVersion = (Math.floor(currentVersion) + 1).toFixed(1); // Solo incremento en 1
+            const newVersion = (Math.floor(currentVersion) + 1).toFixed(1); 
 
-            // Insertar el nuevo documento con la nueva versión
             const insertSql = "INSERT INTO politicas (titulo, contenido, vigencia, fecha_creacion, fecha_activacion, version, estado) VALUES (?, ?, 'activo', NOW(), ?, ?, 'ok')";
             db.query(insertSql, [titulo, contenido, fecha_activacion, newVersion], (err, result) => {
                 if (err) {

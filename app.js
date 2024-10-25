@@ -29,7 +29,7 @@ const logger = winston.createLogger({
 app.use(helmet());
 
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: 'https://farmamedic.vercel.app',
     credentials: true, 
 }));
 
@@ -53,7 +53,7 @@ app.use(
         saveUninitialized: false, 
         cookie: {
             httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', // Solo cookies seguras en producción
+            secure: process.env.NODE_ENV === 'production', 
             sameSite: 'Strict',
             maxAge: 30 * 60 * 1000, 
         },
