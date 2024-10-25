@@ -1,5 +1,4 @@
 const express = require('express');
-const cors = require('cors');
 const bodyParser = require('body-parser');
 const session = require('express-session'); 
 const MySQLStore = require('express-mysql-session')(session); 
@@ -28,20 +27,6 @@ const logger = winston.createLogger({
 
 app.use(helmet());
 
-const allowedOrigins = ['https://farmamedic.vercel.app', 'https://isoftuthh.com'];
-
-app.use(cors({
-    origin: function (origin, callback) {
-        if (allowedOrigins.includes(origin) || !origin) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true, 
-}));
-
-
 const sessionStore = new MySQLStore({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -69,9 +54,7 @@ app.use(
 );
 
 app.use(cookieParser());
-
 app.use(express.static(path.join(__dirname, 'public')));
-
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
@@ -82,7 +65,6 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
-
 app.use(csrfProtection);
 
 app.get('/api/csrf-token', (req, res) => {
@@ -97,8 +79,6 @@ app.get('/api/csrf-token', (req, res) => {
 app.use((err, req, res, next) => {
     if (err.name === 'ForbiddenError') { 
         res.status(403).send('CSRF token inválido o faltante.');
-    } else if (err.message.includes('CORS')) { 
-        res.status(403).send('Acceso denegado por políticas de CORS.');
     } else {
         logger.error({
             message: err.message,
@@ -114,7 +94,6 @@ app.use((err, req, res, next) => {
         }
     }
 });
-
 
 app.use('/api', authRoutes);
 
