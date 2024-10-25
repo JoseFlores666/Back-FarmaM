@@ -14,7 +14,7 @@ require('dotenv').config();
 
 const app = express();
 
-app.set('trust proxy', true); 
+app.set('trust proxy', true);
 
 const logger = winston.createLogger({
     level: 'error',
@@ -96,26 +96,20 @@ app.get('/api/csrf-token', (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
 });
 
+
+//problema
 app.use((err, req, res, next) => {
-    if (err.name === 'ForbiddenError') {
-        res.status(403).send('CSRF token inválido o faltante.');
-    } else if (err.message.includes('CORS')) {
-        res.status(403).send('Acceso denegado por políticas de CORS.');
-    } else {
-        logger.error({
-            message: err.message,
-            stack: err.stack,
-            method: req.method,
-            url: req.originalUrl,
-            ip: req.ip
-        });
-        if (process.env.NODE_ENV === 'production') {
-            res.status(500).send('Ocurrió un error, por favor inténtalo de nuevo más tarde.');
-        } else {
-            res.status(500).send(err.stack);
-        }
-    }
-});
+
+    logger.error({
+        message: err.message,
+        stack: err.stack,
+        method: req.method,
+        url: req.originalUrl,
+        ip: req.ip
+    });
+
+}
+);
 
 
 app.use('/api', authRoutes);
