@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 const authRoutes = require('./routes/authRoutes');
-const csrfProtection = require('./middlewares/csrfMiddleware');
+// const csrfProtection = require('./middlewares/csrfMiddleware');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -14,7 +14,7 @@ require('dotenv').config();
 
 const app = express();
 
-app.set('trust proxy', true);
+app.set('trust proxy', true); 
 
 const logger = winston.createLogger({
     level: 'error',
@@ -85,31 +85,37 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-app.use(csrfProtection);
+// app.use(csrfProtection);
 
-app.get('/api/csrf-token', (req, res) => {
-    res.cookie('XSRF-TOKEN', req.csrfToken(), {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Strict',
-    });
-    res.json({ csrfToken: req.csrfToken() });
-});
+// app.get('/api/csrf-token', (req, res) => {
+//     res.cookie('XSRF-TOKEN', req.csrfToken(), {
+//         httpOnly: false,
+//         secure: process.env.NODE_ENV === 'production',
+//         sameSite: 'Strict',
+//     });
+//     res.json({ csrfToken: req.csrfToken() });
+// });
 
-
-//problema
-app.use((err, req, res, next) => {
-
-    logger.error({
-        message: err.message,
-        stack: err.stack,
-        method: req.method,
-        url: req.originalUrl,
-        ip: req.ip
-    });
-
-}
-);
+// app.use((err, req, res, next) => {
+//     if (err.name === 'ForbiddenError') {
+//         res.status(403).send('CSRF token inválido o faltante.');
+//     } else if (err.message.includes('CORS')) {
+//         res.status(403).send('Acceso denegado por políticas de CORS.');
+//     } else {
+//         logger.error({
+//             message: err.message,
+//             stack: err.stack,
+//             method: req.method,
+//             url: req.originalUrl,
+//             ip: req.ip
+//         });
+//         if (process.env.NODE_ENV === 'production') {
+//             res.status(500).send('Ocurrió un error, por favor inténtalo de nuevo más tarde.');
+//         } else {
+//             res.status(500).send(err.stack);
+//         }
+//     }
+// });
 
 
 app.use('/api', authRoutes);
