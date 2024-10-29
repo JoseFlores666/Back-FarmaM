@@ -4,14 +4,22 @@ const db = require('../config/db');
 
 const getEslogan = async (req, res) => {
     const sql = "SELECT * FROM eslogan LIMIT 1";
+    
     db.query(sql, (err, result) => {
         if (err) {
             console.error('Error en la consulta:', err);
             return res.status(500).json({ message: "Error en el servidor" });
         }
+
+        if (!Array.isArray(result)) {
+            console.error('El resultado no es un array:', result);
+            return res.status(500).json({ message: "Error en el servidor, resultado no válido" });
+        }
+
         if (result.length === 0) {
             return res.json({ eslogan: '' });
         }
+
         return res.json(result[0]);
     });
 };
@@ -34,15 +42,17 @@ const updateEslogan = (req, res) => {
     });
 };
 
-const createEslogan = (eslogan, res) => {
+const createEslogan = async (req, res) => {
+    const { eslogan } = req.body; 
+    
     const insertSql = "INSERT INTO eslogan (eslogan) VALUES (?)";
-    db.query(insertSql, [eslogan], (err) => {
-        if (err) {
-            console.error('Error al crear el eslogan:', err);
-            return res.status(500).json({ message: "Error al crear el eslogan" });
-        }
+    try {
+        await db.query(insertSql, [eslogan]);
         return res.json({ success: "Eslogan agregado correctamente" });
-    });
+    } catch (err) {
+        console.error('Error al crear el eslogan:', err);
+        return res.status(500).json({ message: "Error al crear el eslogan" });
+    }
 };
 
 const deleteEslogan = (req, res) => {
@@ -55,6 +65,5 @@ const deleteEslogan = (req, res) => {
         return res.json({ success: "Eslogan eliminado correctamente" });
     });
 };
-
 
 module.exports = { getEslogan, updateEslogan, createEslogan, deleteEslogan };

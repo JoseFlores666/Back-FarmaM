@@ -11,12 +11,29 @@ const verifyOtp = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { correo, otp } = req.body; 
-  const storedOtp = req.cookies.verification_code; 
+  const { correo, otp } = req.body;
 
   try {
-    if (otp === storedOtp) {
-      const updateResult = await db.query('UPDATE usuarios SET isVerified = 1 WHERE correo = ?', [correo]);
+    const results = await new Promise((resolve, reject) => {
+      db.query("SELECT verification_code FROM usuarios WHERE correo = ?", [correo], (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+
+    const storedVerificationCode = results[0].verification_code;
+
+    if (otp === storedVerificationCode) {
+      const updateResult = await new Promise((resolve, reject) => {
+        db.query('UPDATE usuarios SET isVerified = 1 WHERE correo = ?', [correo], (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
+        });
+      });
 
       if (updateResult.affectedRows === 0) {
         return res.status(404).json({ message: 'No se pudo actualizar la verificación en la tabla de usuarios' });

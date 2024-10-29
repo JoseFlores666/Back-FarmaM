@@ -63,7 +63,6 @@ async function recuperarPassEmail(token, email, name) {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log('Correo de recuperación enviado con éxito a', email);
     } catch (error) {
         console.error('Error enviando correo:', error);
     }

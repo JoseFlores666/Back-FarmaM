@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 const authRoutes = require('./routes/authRoutes');
-// const csrfProtection = require('./middlewares/csrfMiddleware');
+const csrfProtection = require('./middlewares/csrfMiddleware');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -14,7 +14,7 @@ require('dotenv').config();
 
 const app = express();
 
-app.set('trust proxy', true); 
+// app.set('trust proxy', true); 
 
 const logger = winston.createLogger({
     level: 'error',
@@ -30,7 +30,7 @@ const logger = winston.createLogger({
 
 app.use(helmet());
 
-const allowedOrigins = ['https://farmamedic.vercel.app', 'https://isoftuthh.com', 'https://back-farmam.onrender.com'];
+const allowedOrigins = ['https://farmamedic.vercel.app', 'https://isoftuthh.com', 'https://back-farmam.onrender.com', 'http://localhost:5173','http://localhost:4000'];
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -79,7 +79,7 @@ app.use(bodyParser.json({ limit: '10mb' }));
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    max: 5000,
     message: 'Demasiadas solicitudes desde esta IP, por favor inténtalo de nuevo más tarde.'
 });
 

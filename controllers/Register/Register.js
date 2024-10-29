@@ -50,30 +50,22 @@ const register = async (req, res) => {
 
             connection.query("INSERT INTO usuarios SET ?", newUser, (err, userInsertResult) => {
                 if (err) {
-                    console.error('Error al insertar usuario:', err);
                     return res.status(500).json({ message: 'Ocurrió un error al registrar el usuario.' });
                 }
 
                 const userId = userInsertResult.insertId;
 
-                connection.query("INSERT INTO seguridad (user_id, isVerified) VALUES (?, ?)", [userId, 0], (err) => {
+                const verificationCode = generateVerificationCode();
+
+                connection.query("UPDATE usuarios SET verification_code = ? WHERE id = ?", [verificationCode, userId], (err) => {
                     if (err) {
-                        console.error('Error al insertar en la tabla de seguridad:', err);
+                        console.error('Error al actualizar el código de verificación:', err);
                         return res.status(500).json({ message: 'Ocurrió un error al registrar la seguridad del usuario.' });
                     }
 
                     try {
-                        const verificationCode = generateVerificationCode(); 
-
-                        res.cookie('verification_code', verificationCode, { 
-                            httpOnly: false, 
-                            maxAge: 15 * 60 * 1000 
-                        });
-
                         sendVerificationEmail(verificationCode, sanitizedCorreo, sanitizedUsuario);
-
                         return res.status(200).json({ message: 'Registro exitoso! Un código de verificación ha sido enviado a tu correo.' });
-
                     } catch (emailError) {
                         console.error('Error al enviar el correo de verificación:', emailError);
                         return res.status(500).json({ message: 'Ocurrió un error al enviar el correo de verificación.' });
