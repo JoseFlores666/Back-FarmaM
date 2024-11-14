@@ -1,92 +1,83 @@
-const cloudinary = require('../config/cloudinary');
+const db = require('../config/db');
 
 const uploadLogo = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No se ha subido ningún archivo' });
-    }
+    const { url } = req.body;
 
-    const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: 'Home/logos' },
-      (error, result) => {
-        if (error) {
-          return res.status(500).json({ error: 'Error al subir el logo' });
-        }
-        res.json({ path: result.secure_url, public_id: result.public_id });
-      }
-    );
-    req.file.stream.pipe(uploadStream);
+    const query = 'INSERT INTO logos (url, isActive) VALUES (?, ?)';
+    db.query(query, [url, false], (error, result) => {
+      if (error) return res.status(500).json({ message: 'Error al subir el logo', error });
+      res.status(201).json({ message: 'Logo subido y guardado correctamente', logo: { id: result.insertId, url, isActive: false } });
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Error al procesar la imagen' });
+    res.status(500).json({ message: 'Error al subir el logo', error });
   }
 };
 
 const getAllLogos = async (req, res) => {
   try {
-    const { resources } = await cloudinary.search
-      .expression('folder:logos')
-      .sort_by('public_id', 'desc')
-      .execute();
-    
-    const logos = resources.map(logo => ({
-      url: logo.secure_url,
-      public_id: logo.public_id,
-    }));
-    
-    res.json(logos);
+    const query = 'SELECT * FROM logos';
+    db.query(query, (error, results) => {
+      if (error) return res.status(500).json({ message: 'Error al obtener los logos', error });
+      res.status(200).json(results);
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener los logos' });
-  }
-};
-
-const getLogoById = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const logo = await cloudinary.api.resource(id);
-    res.json({ url: logo.secure_url, public_id: logo.public_id });
-  } catch (error) {
-    res.status(404).json({ error: 'Logo no encontrado' });
+    res.status(500).json({ message: 'Error al obtener los logos', error });
   }
 };
 
 const updateLogo = async (req, res) => {
-  const { id } = req.params; 
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No se ha subido ningún archivo' });
-    }
-    
-    await cloudinary.uploader.destroy(id);
-    
-    const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: 'Home/logos' },
-      (error, result) => {
-        if (error) {
-          return res.status(500).json({ error: 'Error al actualizar el logo' });
-        }
-        res.json({ path: result.secure_url, public_id: result.public_id });
+    const { id } = req.params;
+    const { url, isActive } = req.body;
+
+    const query = 'UPDATE logos SET url = ?, isActive = ? WHERE id = ?';
+    db.query(query, [url, isActive, id], (error, result) => {
+      if (error) return res.status(500).json({ message: 'Error al actualizar el logo', error });
+      if (isActive) {
+        const resetActiveQuery = 'UPDATE logos SET isActive = false WHERE id != ?';
+        db.query(resetActiveQuery, [id]);
       }
-    );
-    req.file.stream.pipe(uploadStream);
+      res.status(200).json({ message: 'Logo actualizado correctamente', logo: { id, url, isActive } });
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Error al actualizar el logo' });
+    res.status(500).json({ message: 'Error al actualizar el logo', error });
   }
 };
 
 const deleteLogo = async (req, res) => {
-  const { id } = req.params; 
   try {
-    await cloudinary.uploader.destroy(id);
-    res.json({ message: `Logo con ID ${id} eliminado exitosamente` });
+    const { id } = req.params;
+
+    const query = 'DELETE FROM logos WHERE id = ?';
+    db.query(query, [id], (error, result) => {
+      if (error) return res.status(500).json({ message: 'Error al eliminar el logo', error });
+      res.status(200).json({ message: 'Logo eliminado correctamente' });
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Error al eliminar el logo' });
+    res.status(500).json({ message: 'Error al eliminar el logo', error });
+  }
+};
+
+const getLogoActivo = async (req, res) => {
+  try {
+    const query = 'SELECT * FROM logos WHERE isActive = true LIMIT 1';
+    db.query(query, (error, results) => {
+      if (error) return res.status(500).json({ message: 'Error al obtener el logo activo', error });
+      if (results.length === 0) {
+        return res.status(404).json({ message: 'No hay logo activo' });
+      }
+      res.status(200).json(results[0]);
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener el logo activo', error });
   }
 };
 
 module.exports = {
   uploadLogo,
   getAllLogos,
-  getLogoById,
   updateLogo,
   deleteLogo,
+  getLogoActivo,
 };

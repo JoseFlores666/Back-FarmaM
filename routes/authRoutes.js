@@ -10,9 +10,11 @@ const { getPoliticas, createPolitica, updatePolitica, deletePolitica, getCurrent
 const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondiciones, deleteTerminosCondiciones, getCurrentTerminos } = require('../controllers/CrudTerminosYC');
 const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/CrudEnlaces');
 const { createEslogan, getEslogan, deleteEslogan, updateEslogan } = require('../controllers/CrudEslogan');
-const { getAllLogos, getLogoById, deleteLogo, uploadLogo, updateLogo } = require('../controllers/CrudLogo');
+const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo } = require('../controllers/CrudLogo');
 const { getTitle, createTitle, deleteTitle, updateTitle } = require('../controllers/CrudTittle');
 const { getContactInfo, upsertContactInfo, deleteContactInfo } = require('../controllers/CrudContact');
+const {createAudit, getAuditLogs  } = require('../controllers/CrudAuditoria');
+
 
 router.post('/login', login);
 router.post('/register', validateRegister, register);
@@ -67,9 +69,14 @@ router.delete('/deleteContactInfo/:id', deleteContactInfo);
 
 //CrudLogo
 router.get('/getAllLogos', getAllLogos);
-router.get('/getLogoById:id', getLogoById);
-router.put('/updateLogo:id', updateLogo);
+router.get('/getLogoActivo', getLogoActivo);
+router.put('/updateLogo/:id', updateLogo); 
 router.post('/uploadLogo', uploadLogo);
-router.delete('/deleteLogo', deleteLogo);
+router.delete('/deleteLogo/:id', deleteLogo);
+
+//CrudAuditoria
+router.post('/createAudit', createAudit);
+router.get('/getAuditLogs', getAuditLogs);
+
 
 module.exports = router;
