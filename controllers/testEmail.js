@@ -1,19 +1,35 @@
 const nodemailer = require('nodemailer');
-require('dotenv').config(); 
+const emailExistence = require('email-existence'); 
+require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail', 
+    service: 'gmail',
     auth: {
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS  
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
     }
 });
 
 async function sendVerificationEmail(token, email, name) {
     try {
+        const emailExists = await new Promise((resolve, reject) => {
+            emailExistence.check(email, (err, res) => {
+                if (err) {
+                    console.error('Error verificando el correo:', err);
+                    reject(err);
+                }
+                resolve(res);
+            });
+        });
+
+        if (!emailExists) {
+            console.error('Correo no válido o inexistente:', email);
+            throw new Error('Correo no válido o inexistente.');
+        }
+
         const mailOptions = {
-            from: '"FarmaMedic" <' + process.env.EMAIL_USER + '>', 
-            to: email, 
+            from: '"FarmaMedic" <' + process.env.EMAIL_USER + '>',
+            to: email,
             subject: 'Verificación de Correo Electrónico',
             html: `
             <html>
@@ -65,7 +81,7 @@ async function sendVerificationEmail(token, email, name) {
         await transporter.sendMail(mailOptions);
         console.log('Correo enviado con éxito a', email);
     } catch (error) {
-        console.error('Error enviando correo:', error);
+        console.error('Error enviando correo:', error.message);
     }
 }
 

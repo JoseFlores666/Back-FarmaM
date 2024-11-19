@@ -2,14 +2,13 @@ const { body, validationResult } = require('express-validator');
 
 const validateRegister = [
     body('nombre')
-        .isLength({ min: 3 }).withMessage('El nombre debe tener al menos 3 caracteres')
-        .matches(/^[a-zA-Z ]+$/).withMessage('El nombre solo puede contener letras y espacios')
-        .trim()
-        .escape(),
-
+    .isLength({ min: 3 }).withMessage('El nombre debe tener al menos 3 caracteres')
+    .matches(/^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/).withMessage('El nombre solo puede contener letras, espacios y caracteres acentuados')
+    .trim()
+    .escape(),
     body('correo')
         .isEmail().withMessage('Debe ser un correo válido')
-        .normalizeEmail(), 
+        .normalizeEmail(),
 
     body('password')
         .isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres')
@@ -18,7 +17,7 @@ const validateRegister = [
 
     body('edad')
         .isInt({ min: 18 }).withMessage('Debes ser mayor de 18 años')
-        .toInt(), 
+        .toInt(),
 
     body('telefono')
         .isLength({ min: 10, max: 10 }).withMessage('El teléfono debe tener 10 dígitos')

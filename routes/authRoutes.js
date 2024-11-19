@@ -13,13 +13,20 @@ const { createEslogan, getEslogan, deleteEslogan, updateEslogan } = require('../
 const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo } = require('../controllers/CrudLogo');
 const { getTitle, createTitle, deleteTitle, updateTitle } = require('../controllers/CrudTittle');
 const { getContactInfo, upsertContactInfo, deleteContactInfo } = require('../controllers/CrudContact');
-const {createAudit, getAuditLogs  } = require('../controllers/CrudAuditoria');
-
+const { createAudit, getAuditLogs } = require('../controllers/CrudAuditoria');
+const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../controllers/CrudUsuariosBlock');
 
 router.post('/login', login);
 router.post('/register', validateRegister, register);
 router.post('/verifyOtp', verifyOtp);
 
+// Gestión De Usuarios
+router.get('/getUsuariosAll', getUsuariosAll); // Obtiene todos los usuarios
+router.put('/bloquearUsuario/:id', bloquearUsuario); // Bloquea un usuario (cambia intentos a 5)
+router.put('/desbloquearUsuario/:id', desbloquearUsuario); // Desbloquea un usuario (cambia intentos a 0)
+
+
+//recuperacion y cambio de passw
 router.post('/recuperar-password', recuperarPassword);
 router.post('/cambiar-password', cambiarPassword);
 
@@ -70,7 +77,7 @@ router.delete('/deleteContactInfo/:id', deleteContactInfo);
 //CrudLogo
 router.get('/getAllLogos', getAllLogos);
 router.get('/getLogoActivo', getLogoActivo);
-router.put('/updateLogo/:id', updateLogo); 
+router.put('/updateLogo/:id', updateLogo);
 router.post('/uploadLogo', uploadLogo);
 router.delete('/deleteLogo/:id', deleteLogo);
 

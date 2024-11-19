@@ -2,25 +2,43 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
+const isFechaValida = (fecha) => {
+    const fechaActual = new Date();
+    const fechaDate = new Date(fecha);
+    
+    if (isNaN(fechaDate.getTime())) {
+        return false; 
+    }
+    
+    if (fechaDate < fechaActual) {
+        return false; 
+    }
+    
+    return true;
+};
+
 const getPoliticas = async (req, res) => {
     const sql = "SELECT * FROM politicas";
     db.query(sql, (err, result) => {
         if (err) {
-            console.error('Error en la consulta:', err);
             return res.status(500).json({ message: "Error en el servidor" });
         }
         return res.json(result);
     });
 };
+
 const createPolitica = async (req, res) => {
     const { titulo, contenido, fecha_vigencia } = req.body;
+
+    if (!isFechaValida(fecha_vigencia)) {
+        return res.status(400).json({ message: "La fecha de vigencia no es válida o está en el pasado" });
+    }
 
     const vigencia = 'Vigente';
 
     const checkActiveSql = "SELECT * FROM politicas WHERE vigencia = 'Vigente'";
     db.query(checkActiveSql, async (err, activeResults) => {
         if (err) {
-            console.error('Error al consultar políticas activas:', err);
             return res.status(500).json({ message: "Error en el servidor" });
         }
 
@@ -34,7 +52,6 @@ const createPolitica = async (req, res) => {
         const insertSql = "INSERT INTO politicas (titulo, contenido, vigencia, fecha_creacion, fecha_vigencia, version, estado) VALUES (?, ?, ?, NOW(), ?, ?, 'en proceso')";
         db.query(insertSql, [titulo, contenido, vigencia, fecha_vigencia, version], (err, result) => {
             if (err) {
-                console.error('Error al crear políticas:', err);
                 return res.status(500).json({ message: "Ocurrió un error inesperado: " + err });
             }
             return res.json({ success: "Documento regulatorio agregado correctamente", id: result.insertId });
@@ -46,6 +63,10 @@ const updatePolitica = async (req, res) => {
     const { id } = req.params;
     const { titulo, contenido, fecha_vigencia } = req.body; 
 
+    if (!isFechaValida(fecha_vigencia)) {
+        return res.status(400).json({ message: "La fecha de vigencia no es válida o está en el pasado" });
+    }
+
     try {
         const updateCurrentSql = "UPDATE politicas SET vigencia = 'No vigente' WHERE id = ?";
         await db.query(updateCurrentSql, [id]);
@@ -53,7 +74,6 @@ const updatePolitica = async (req, res) => {
         const getCurrentVersionSql = "SELECT version FROM politicas WHERE id = ?";
         db.query(getCurrentVersionSql, [id], async (err, result) => {
             if (err) {
-                console.error('Error al obtener versión actual:', err);
                 return res.status(500).json({ message: "Error en el servidor" });
             }
 
@@ -67,14 +87,12 @@ const updatePolitica = async (req, res) => {
             const insertSql = "INSERT INTO politicas (titulo, contenido, vigencia, fecha_creacion, fecha_vigencia, version, estado) VALUES (?, ?, ?, NOW(), ?, ?, 'en proceso')";
             db.query(insertSql, [titulo, contenido, 'Vigente', fecha_vigencia, newVersion], (err) => {
                 if (err) {
-                    console.error('Error al insertar nueva versión:', err);
                     return res.status(500).json({ message: "Ocurrió un error inesperado: " + err });
                 }
                 return res.json({ success: "Documento regulatorio actualizado correctamente" });
             });
         });
     } catch (err) {
-        console.error('Error en la función updatePolitica:', err);
         return res.status(500).json({ message: "Ocurrió un error inesperado: " + err });
     }
 };
@@ -85,7 +103,6 @@ const deletePolitica = async (req, res) => {
 
     db.query(sql, [id], (err, result) => {
         if (err) {
-            console.error('Error al marcar como eliminado:', err);
             return res.status(500).json({ message: "Ocurrió un error inesperado: " + err });
         }
         if (result.affectedRows === 0) {
@@ -99,7 +116,6 @@ const getCurrentPolitica = async (req, res) => {
     const sql = "SELECT * FROM politicas WHERE vigencia = 'Vigente'";
     db.query(sql, (err, result) => {
         if (err) {
-            console.error('Error al consultar políticas vigentes:', err);
             return res.status(500).json({ message: "Error en el servidor" });
         }
         return res.json(result);

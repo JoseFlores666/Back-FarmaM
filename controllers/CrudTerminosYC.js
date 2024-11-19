@@ -2,26 +2,44 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
+const isFechaValida = (fecha) => {
+    const fechaActual = new Date();
+    const fechaDate = new Date(fecha);
+    
+    if (isNaN(fechaDate.getTime())) {
+        return false; 
+    }
+    
+    if (fechaDate < fechaActual) {
+        return false; 
+    }
+    
+    return true;
+};
+
 const getTerminosCondiciones = async (req, res) => {
     const sql = "SELECT * FROM terminos_condiciones";
     db.query(sql, (err, result) => {
         if (err) {
-            console.error('Error en la consulta:', err);
-            return res.status(500).json({ message: "Error en el servidor" });
+            return res.status(500).json({ message: "Error en el servidor al obtener términos y condiciones", details: err.message });
         }
         return res.json(result);
     });
 };
 
 const createTerminosCondiciones = async (req, res) => {
-    const { titulo, contenido, fecha_vigencia } = req.body; 
+    const { titulo, contenido, fecha_vigencia } = req.body;
+
+    if (!isFechaValida(fecha_vigencia)) {
+        return res.status(400).json({ message: "La fecha de vigencia no es válida o está en el pasado" });
+    }
+
     const vigencia = 'Vigente';
 
     const checkActiveSql = "SELECT * FROM terminos_condiciones WHERE vigencia = 'Vigente'";
     db.query(checkActiveSql, async (err, activeResults) => {
         if (err) {
-            console.error('Error al consultar términos activos:', err);
-            return res.status(500).json({ message: "Error en el servidor" });
+            return res.status(500).json({ message: "Error en el servidor al consultar términos activos", details: err.message });
         }
 
         if (activeResults.length > 0) {
@@ -34,8 +52,7 @@ const createTerminosCondiciones = async (req, res) => {
         const insertSql = "INSERT INTO terminos_condiciones (titulo, contenido, vigencia, fecha_creacion, fecha_vigencia, version, estado) VALUES (?, ?, ?, NOW(), ?, ?, 'en proceso')";
         db.query(insertSql, [titulo, contenido, vigencia, fecha_vigencia, version], (err, result) => {
             if (err) {
-                console.error('Error al crear término:', err);
-                return res.status(500).json({ message: "Ocurrió un error inesperado: " + err });
+                return res.status(500).json({ message: "Ocurrió un error inesperado al crear término", details: err.message });
             }
             return res.json({ success: "Término y condición agregado correctamente", id: result.insertId });
         });
@@ -46,6 +63,10 @@ const updateTerminosCondiciones = async (req, res) => {
     const { id } = req.params;
     const { titulo, contenido, fecha_vigencia } = req.body;
 
+    if (!isFechaValida(fecha_vigencia)) {
+        return res.status(400).json({ message: "La fecha de vigencia no es válida o está en el pasado" });
+    }
+
     try {
         const updateCurrentSql = "UPDATE terminos_condiciones SET vigencia = 'No vigente' WHERE id = ?";
         await db.query(updateCurrentSql, [id]);
@@ -53,8 +74,7 @@ const updateTerminosCondiciones = async (req, res) => {
         const getCurrentVersionSql = "SELECT version FROM terminos_condiciones WHERE id = ?";
         db.query(getCurrentVersionSql, [id], async (err, result) => {
             if (err) {
-                console.error('Error al obtener versión actual:', err);
-                return res.status(500).json({ message: "Error en el servidor" });
+                return res.status(500).json({ message: "Error en el servidor al obtener versión actual", details: err.message });
             }
 
             if (result.length === 0) {
@@ -67,15 +87,13 @@ const updateTerminosCondiciones = async (req, res) => {
             const insertSql = "INSERT INTO terminos_condiciones (titulo, contenido, vigencia, fecha_creacion, fecha_vigencia, version, estado) VALUES (?, ?, ?, NOW(), ?, ?, 'en proceso')";
             db.query(insertSql, [titulo, contenido, 'Vigente', fecha_vigencia, newVersion], (err) => {
                 if (err) {
-                    console.error('Error al insertar nueva versión:', err);
-                    return res.status(500).json({ message: "Ocurrió un error inesperado: " + err });
+                    return res.status(500).json({ message: "Ocurrió un error inesperado al insertar nueva versión", details: err.message });
                 }
                 return res.json({ success: "Término y condición actualizado correctamente" });
             });
         });
     } catch (err) {
-        console.error('Error en la función updateTerminosCondiciones:', err);
-        return res.status(500).json({ message: "Ocurrió un error inesperado: " + err });
+        return res.status(500).json({ message: "Ocurrió un error inesperado al actualizar término", details: err.message });
     }
 };
 
@@ -85,8 +103,7 @@ const deleteTerminosCondiciones = async (req, res) => {
 
     db.query(sql, [id], (err, result) => {
         if (err) {
-            console.error('Error al marcar como eliminado:', err);
-            return res.status(500).json({ message: "Ocurrió un error inesperado: " + err });
+            return res.status(500).json({ message: "Error al marcar término como eliminado", details: err.message });
         }
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: "Término no encontrado" });
@@ -99,11 +116,10 @@ const getCurrentTerminos = async (req, res) => {
     const sql = "SELECT * FROM terminos_condiciones WHERE vigencia = 'Vigente'";
     db.query(sql, (err, result) => {
         if (err) {
-            console.error('Error al consultar términos vigentes:', err);
-            return res.status(500).json({ message: "Error en el servidor" });
+            return res.status(500).json({ message: "Error en el servidor al obtener términos vigentes", details: err.message });
         }
         return res.json(result);
     });
 };
 
-module.exports = {getTerminosCondiciones,createTerminosCondiciones,updateTerminosCondiciones,deleteTerminosCondiciones,getCurrentTerminos};
+module.exports = { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondiciones, deleteTerminosCondiciones, getCurrentTerminos };
