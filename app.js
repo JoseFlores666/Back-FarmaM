@@ -120,7 +120,7 @@ const logger = winston.createLogger({
 
 app.use(helmet());
 
-const allowedOrigins = ['https://farmamedic.vercel.app', 'https://isoftuthh.com', 'https://back-farmam.onrender.com', 'http://localhost:5173','http://localhost:4000', 'https://localhost:5173', 'https://localhost:4000'];
+const allowedOrigins = ['https://farmamedic.vercel.app', 'https://isoftuthh.com', 'https://back-farmam.onrender.com', 'http://localhost:5173','http://localhost:4000', 'https://localhost:5173', 'https://localhost:4000', 'https://farma-medic.vercel.app'];
 
 app.use(cors({
     origin: function (origin, callback) {
