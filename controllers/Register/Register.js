@@ -3,23 +3,23 @@ const connection = require('../../config/db');
 const sanitizeHtml = require('sanitize-html');
 const sendVerificationEmail = require('../testEmail');
 const crypto = require('crypto');
-const emailExistence = require('email-existence'); 
+// const emailExistence = require('email-existence'); // Comentado
 
 const generateVerificationCode = () => {
     return crypto.randomBytes(3).toString('hex');
 };
 
-const verifyEmailExistence = (email) => {
-    return new Promise((resolve, reject) => {
-        emailExistence.check(email, (error, response) => {
-            if (error) {
-                console.error('Error verificando el correo:', error);
-                return reject(error);
-            }
-            resolve(response);
-        });
-    });
-};
+// const verifyEmailExistence = (email) => {
+//     return new Promise((resolve, reject) => {
+//         emailExistence.check(email, (error, response) => {
+//             if (error) {
+//                 console.error('Error verificando el correo:', error);
+//                 return reject(error);
+//             }
+//             resolve(response);
+//         });
+//     });
+// };
 
 const register = async (req, res) => {
     try {
@@ -37,10 +37,11 @@ const register = async (req, res) => {
         const sanitizedTelefono = sanitizeHtml(telefono);
         const sanitizedGenero = sanitizeHtml(genero);
 
-        const emailExists = await verifyEmailExistence(sanitizedCorreo);
-        if (!emailExists) {
-            return res.status(400).json({ message: 'La dirección de correo no es válida o no existe.' });
-        }
+        // Comentado el uso de verifyEmailExistence
+        // const emailExists = await verifyEmailExistence(sanitizedCorreo);
+        // if (!emailExists) {
+        //     return res.status(400).json({ message: 'La dirección de correo no es válida o no existe.' });
+        // }
 
         connection.query("SELECT * FROM usuarios WHERE correo = ?", [sanitizedCorreo], (err, result) => {
             if (err) {
