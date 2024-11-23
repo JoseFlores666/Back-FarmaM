@@ -90,39 +90,6 @@
 
 
 
-// app.use(csrfProtection);
-
-// app.get('/api/csrf-token', (req, res) => {
-//     res.cookie('XSRF-TOKEN', req.csrfToken(), {
-//         httpOnly: false,
-//         secure: process.env.NODE_ENV === 'production',
-//         sameSite: 'Strict',
-//     });
-//     res.json({ csrfToken: req.csrfToken() });
-// });
-
-// app.use((err, req, res, next) => {
-//     if (err.name === 'ForbiddenError') {
-//         res.status(403).send('CSRF token inválido o faltante.');
-//     } else if (err.message.includes('CORS')) {
-//         res.status(403).send('Acceso denegado por políticas de CORS.');
-//     } else {
-//         logger.error({
-//             message: err.message,
-//             stack: err.stack,
-//             method: req.method,
-//             url: req.originalUrl,
-//             ip: req.ip
-//         });
-//         if (process.env.NODE_ENV === 'production') {
-//             res.status(500).send('Ocurrió un error, por favor inténtalo de nuevo más tarde.');
-//         } else {
-//             res.status(500).send(err.stack);
-//         }
-//     }
-// });
-
-
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
