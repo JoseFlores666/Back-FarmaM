@@ -6,7 +6,7 @@ const path = require('path');
 
 // si es true = https y si es false = http
 //al desplegarlo en render debera estar en false
-const USE_HTTPS = true;  
+const USE_HTTPS = false;  
 
 if (USE_HTTPS) {
     const options = {
