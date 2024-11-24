@@ -72,6 +72,7 @@ const register = async (req, res) => {
                         httpOnly: true, // Más seguro, no accesible desde JavaScript
                         secure: process.env.NODE_ENV === 'production', // Solo enviar en HTTPS en producción
                         maxAge: 15 * 60 * 1000, // 15 minutos
+                        sameSite: 'None', 
                     });
 
                     try {
