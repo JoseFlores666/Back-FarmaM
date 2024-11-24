@@ -3,23 +3,11 @@ const connection = require('../../config/db');
 const sanitizeHtml = require('sanitize-html');
 const sendVerificationEmail = require('../testEmail');
 const crypto = require('crypto');
-// const emailExistence = require('email-existence'); // Comentado
 
+// Generar el código de verificación
 const generateVerificationCode = () => {
     return crypto.randomBytes(3).toString('hex');
 };
-
-// const verifyEmailExistence = (email) => {
-//     return new Promise((resolve, reject) => {
-//         emailExistence.check(email, (error, response) => {
-//             if (error) {
-//                 console.error('Error verificando el correo:', error);
-//                 return reject(error);
-//             }
-//             resolve(response);
-//         });
-//     });
-// };
 
 const register = async (req, res) => {
     try {
@@ -36,12 +24,6 @@ const register = async (req, res) => {
         const sanitizedCorreo = sanitizeHtml(correo);
         const sanitizedTelefono = sanitizeHtml(telefono);
         const sanitizedGenero = sanitizeHtml(genero);
-
-        // Comentado el uso de verifyEmailExistence
-        // const emailExists = await verifyEmailExistence(sanitizedCorreo);
-        // if (!emailExists) {
-        //     return res.status(400).json({ message: 'La dirección de correo no es válida o no existe.' });
-        // }
 
         connection.query("SELECT * FROM usuarios WHERE correo = ?", [sanitizedCorreo], (err, result) => {
             if (err) {
@@ -83,23 +65,22 @@ const register = async (req, res) => {
                         return res.status(500).json({ message: 'Ocurrió un error al registrar el usuario.' });
                     }
 
-                    const userId = userInsertResult.insertId;
                     const verificationCode = generateVerificationCode();
 
-                    connection.query("UPDATE usuarios SET verification_code = ? WHERE id = ?", [verificationCode, userId], (err) => {
-                        if (err) {
-                            console.error('Error al actualizar el código de verificación:', err);
-                            return res.status(500).json({ message: 'Ocurrió un error al registrar la seguridad del usuario.' });
-                        }
-
-                        try {
-                            sendVerificationEmail(verificationCode, sanitizedCorreo, sanitizedUsuario);
-                            return res.status(200).json({ message: 'Registro exitoso! Un código de verificación ha sido enviado a tu correo.' });
-                        } catch (emailError) {
-                            console.error('Error al enviar el correo de verificación:', emailError);
-                            return res.status(500).json({ message: 'Ocurrió un error al enviar el correo de verificación.' });
-                        }
+                    // Establecer cookie con el código de verificación y 15 minutos de expiración
+                    res.cookie('verificationCode', verificationCode, {
+                        httpOnly: true, // Más seguro, no accesible desde JavaScript
+                        secure: process.env.NODE_ENV === 'production', // Solo enviar en HTTPS en producción
+                        maxAge: 15 * 60 * 1000, // 15 minutos
                     });
+
+                    try {
+                        sendVerificationEmail(verificationCode, sanitizedCorreo, sanitizedUsuario);
+                        return res.status(200).json({ message: 'Registro exitoso! Un código de verificación ha sido enviado a tu correo.' });
+                    } catch (emailError) {
+                        console.error('Error al enviar el correo de verificación:', emailError);
+                        return res.status(500).json({ message: 'Ocurrió un error al enviar el correo de verificación.' });
+                    }
                 });
             });
         });

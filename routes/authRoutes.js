@@ -5,26 +5,25 @@ const register = require('../controllers/Register/Register');
 const verifyOtp = require('../controllers/verifyOtp');
 const { validateRegister } = require('../middlewares/validators');
 const { recuperarPassword, cambiarPassword } = require('../controllers/recuperarPassword');
-const { getDeslindesLegales, createDeslindeLegal, updateDeslindeLegal, deleteDeslindeLegal, getCurrentDeslindes } = require('../controllers/CrudDeslinde');
-const { getPoliticas, createPolitica, updatePolitica, deletePolitica, getCurrentPolitica } = require('../controllers/CrudPoliticas');
-const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondiciones, deleteTerminosCondiciones, getCurrentTerminos } = require('../controllers/CrudTerminosYC');
-const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/CrudEnlaces');
-const { createEslogan, getEslogan, deleteEslogan, updateEslogan } = require('../controllers/CrudEslogan');
-const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo } = require('../controllers/CrudLogo');
-const { getTitle, createTitle, deleteTitle, updateTitle } = require('../controllers/CrudTittle');
-const { getContactInfo, upsertContactInfo, deleteContactInfo } = require('../controllers/CrudContact');
-const { createAudit, getAuditLogs } = require('../controllers/CrudAuditoria');
-const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../controllers/CrudUsuariosBlock');
+const { getDeslindesLegales, createDeslindeLegal, updateDeslindeLegal, deleteDeslindeLegal, getCurrentDeslindes } = require('../controllers/Doc-Regulatorio/CrudDeslinde');
+const { getPoliticas, createPolitica, updatePolitica, deletePolitica, getCurrentPolitica } = require('../controllers/Doc-Regulatorio/CrudPoliticas');
+const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondiciones, deleteTerminosCondiciones, getCurrentTerminos } = require('../controllers/Doc-Regulatorio/CrudTerminosYC');
+const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/Perfil-Empresa/CrudEnlaces');
+const { createEslogan, getEslogan, deleteEslogan, updateEslogan } = require('../controllers/Perfil-Empresa/CrudEslogan');
+const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
+const { getTitle, createTitle, deleteTitle, updateTitle } = require('../controllers/Perfil-Empresa/CrudTittle');
+const { getContactInfo, upsertContactInfo, deleteContactInfo } = require('../controllers/Perfil-Empresa/CrudContact');
+const { createAudit, getAuditLogs } = require('../controllers/Perfil-Empresa/CrudAuditoria');
+const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../controllers/Monitor-Incidencias/CrudUsuariosBlock');
 
 router.post('/login', login);
 router.post('/register', validateRegister, register);
 router.post('/verifyOtp', verifyOtp);
 
 // Gestión De Usuarios
-router.get('/getUsuariosAll', getUsuariosAll); // Obtiene todos los usuarios
-router.put('/bloquearUsuario/:id', bloquearUsuario); // Bloquea un usuario (cambia intentos a 5)
-router.put('/desbloquearUsuario/:id', desbloquearUsuario); // Desbloquea un usuario (cambia intentos a 0)
-
+router.get('/getUsuariosAll', getUsuariosAll); 
+router.put('/bloquearUsuario/:id', bloquearUsuario); 
+router.put('/desbloquearUsuario/:id', desbloquearUsuario); 
 
 //recuperacion y cambio de passw
 router.post('/recuperar-password', recuperarPassword);
@@ -84,6 +83,5 @@ router.delete('/deleteLogo/:id', deleteLogo);
 //CrudAuditoria
 router.post('/createAudit', createAudit);
 router.get('/getAuditLogs', getAuditLogs);
-
 
 module.exports = router;

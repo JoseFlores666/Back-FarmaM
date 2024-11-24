@@ -1,4 +1,4 @@
-const connection = require('../config/db');
+const connection = require('../../config/db');
 
 const createAudit = (admin_id, action_type, table_name, record_id, new_data) => {
   const sql = "INSERT INTO auditoria (admin_id, action_type, table_name, record_id, new_data) VALUES (?, ?, ?, ?, ?)";

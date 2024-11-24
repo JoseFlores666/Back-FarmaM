@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
+const db = require('../../config/db');
 
 // Obtener la información de contacto
 const getContactInfo = (req, res) => {
