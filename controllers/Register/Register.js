@@ -3,6 +3,7 @@ const connection = require('../../config/db');
 const sanitizeHtml = require('sanitize-html');
 const sendVerificationEmail = require('../testEmail');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken'); 
 
 const generateVerificationCode = () => {
     return crypto.randomBytes(3).toString('hex');
@@ -66,9 +67,14 @@ const register = async (req, res) => {
 
                     const verificationCode = generateVerificationCode();
 
-                    //sameSite = None permite que otros dominios puedan utilizar cookies 
-                    res.cookie('verificationCode', verificationCode, {
-                        httpOnly: true, 
+                    const token = jwt.sign(
+                        { verificationCode, correo: sanitizedCorreo }, 
+                        process.env.JWT_SECRET, 
+                        { expiresIn: '15m' } 
+                    );
+
+                    res.cookie('verificationToken', token, {
+                        httpOnly: true,
                         secure: process.env.NODE_ENV === 'production', 
                         maxAge: 15 * 60 * 1000, 
                         sameSite: 'None', 

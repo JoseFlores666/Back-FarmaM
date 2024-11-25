@@ -1,18 +1,36 @@
-// const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 
-// const authMiddleware = (req, res, next) => {
-//     const token = req.header('Authorization');
-//     if (!token) {
-//         return res.status(401).send('Acceso denegado, token faltante');
-//     }
+const authenticate = (req, res, next) => {
+    const token = req.cookies.authToken; 
 
-//     try {
-//         const verified = jwt.verify(token, process.env.JWT_SECRET);
-//         req.user = verified;
-//         next();
-//     } catch (err) {
-//         res.status(400).send('Token no válido');
-//     }
-// };
+    if (!token) {
+        return res.status(401).send('Acceso no autorizado. No se proporcionó un token.');
+    }
 
-// module.exports = authMiddleware;
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); 
+        req.user = decoded; 
+        next();
+    } catch (error) {
+        return res.status(403).send('Token inválido o expirado.');
+    }
+};
+
+
+const verificarCodigo = (req, res) => {
+    const token = req.cookies.verificationToken;
+
+    if (!token) {
+        return res.status(401).json({ message: 'No se encontró el token de verificación.' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+        return res.status(200).json({ message: 'Token válido', data: decoded });
+    } catch (error) {
+        return res.status(401).json({ message: 'Token inválido o expirado.' });
+    }
+};
+
+
+module.exports = {authenticate, verificarCodigo};

@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../config/db');
 
-// Obtener la información de contacto
 const getContactInfo = (req, res) => {
     const sql = "SELECT * FROM datos_contacto ORDER BY id DESC LIMIT 1";
 
@@ -25,11 +24,9 @@ const getContactInfo = (req, res) => {
     });
 };
 
-// Actualizar la información de contacto
 const upsertContactInfo = (req, res) => {
     const { direccion, email, telefono } = req.body;
 
-    // Validar el cuerpo de la solicitud
     if (!direccion || typeof direccion !== 'string') {
         return res.status(400).json({ message: 'Dirección inválida.' });
     }
@@ -49,7 +46,6 @@ const upsertContactInfo = (req, res) => {
         }
 
         if (result.length > 0) {
-            // Actualizar el registro existente
             const updateSql = "UPDATE datos_contacto SET direccion = ?, email = ?, telefono = ?, fecha_actualizacion = NOW() WHERE id = ?";
             db.query(updateSql, [direccion, email, telefono, result[0].id], (err) => {
                 if (err) {
@@ -59,7 +55,6 @@ const upsertContactInfo = (req, res) => {
                 return res.json({ success: "Datos de contacto actualizados correctamente" });
             });
         } else {
-            // Insertar un nuevo registro
             const insertSql = "INSERT INTO datos_contacto (direccion, email, telefono, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, NOW(), NOW())";
             db.query(insertSql, [direccion, email, telefono], (err) => {
                 if (err) {
@@ -72,11 +67,9 @@ const upsertContactInfo = (req, res) => {
     });
 };
 
-// Eliminar información de contacto
 const deleteContactInfo = (req, res) => {
     const { id } = req.params;
 
-    // Validar que el ID sea un número
     if (!Number.isInteger(Number(id))) {
         return res.status(400).json({ message: "ID inválido" });
     }

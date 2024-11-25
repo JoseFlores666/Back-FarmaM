@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const connection = require('../../config/db');
 
 const login = (req, res) => {
@@ -18,8 +19,49 @@ const login = (req, res) => {
 
             const user = result[0];
 
+            // Verificar si existe la cookie de desbloqueo
+            const unlockToken = req.cookies.unlockToken;
+
+            if (unlockToken) {
+                try {
+                    const decoded = jwt.verify(unlockToken, process.env.JWT_SECRET);
+                    if (decoded.userId === user.id && decoded.expiresAt > Date.now()) {
+                        connection.query(
+                            "UPDATE usuarios SET intentos = 0 WHERE id = ?",
+                            [user.id],
+                            (resetErr) => {
+                                if (resetErr) {
+                                    return res.status(500).send('Error al desbloquear la cuenta.');
+                                }
+                                res.clearCookie('unlockToken');
+                                return res.status(200).send({ message: 'Tu cuenta ha sido desbloqueada automáticamente. Por favor, inicia sesión nuevamente.' });
+                            }
+                        );
+                        return;
+                    }
+                } catch (error) {
+                    res.clearCookie('unlockToken'); // Limpiar la cookie si es inválida o expirada
+                }
+            }
+
             if (user.intentos >= 5) {
-                return res.status(403).send({ message: 'Tu cuenta está bloqueada debido a múltiples intentos fallidos.' });
+                if (!unlockToken) {
+                    // Generar un token de desbloqueo si aún no existe
+                    const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 horas
+                    const unlockJwt = jwt.sign(
+                        { userId: user.id, expiresAt },
+                        process.env.JWT_SECRET,
+                        { expiresIn: '24h' }
+                    );
+
+                    res.cookie('unlockToken', unlockJwt, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: 'None',
+                        maxAge: 24 * 60 * 60 * 1000, // 24 horas
+                    });
+                }
+                return res.status(403).send({ message: 'Tu cuenta está bloqueada debido a múltiples intentos fallidos. Se desbloqueará automáticamente después de 24 horas.' });
             }
 
             const passwordIsValid = bcrypt.compareSync(password, user.password);
@@ -30,17 +72,13 @@ const login = (req, res) => {
                 connection.query(
                     "UPDATE usuarios SET intentos = ? WHERE id = ?",
                     [nuevosIntentos, user.id],
-                    (updateErr, updateResult) => {
+                    (updateErr) => {
                         if (updateErr) {
                             return res.status(500).send('Ocurrió un error al actualizar los intentos.');
                         }
 
-                        if (updateResult.affectedRows === 0) {
-                            return res.status(500).send('No se pudo actualizar el contador de intentos.');
-                        }
-
                         if (nuevosIntentos >= 5) {
-                            return res.status(403).send({ message: 'Tu cuenta ha sido bloqueada por múltiples intentos fallidos, espera al admin para desbloquearte.' });
+                            return res.status(403).send({ message: 'Tu cuenta ha sido bloqueada debido a múltiples intentos fallidos. Se desbloqueará automáticamente después de 24 horas.' });
                         }
 
                         return res.status(400).send({
@@ -52,18 +90,31 @@ const login = (req, res) => {
                 connection.query(
                     "UPDATE usuarios SET intentos = 0 WHERE id = ?",
                     [user.id],
-                    (resetErr, resetResult) => {
+                    (resetErr) => {
                         if (resetErr) {
                             return res.status(500).send('Ocurrió un error al restablecer los intentos.');
                         }
 
-                        if (resetResult.affectedRows === 0) {
-                            return res.status(500).send('No se pudo restablecer los intentos.');
-                        }
-
                         const isAdmin = user.rolNombre === 'admin';
 
-                        res.cookie('userId', user.id, { maxAge: 24 * 60 * 60 * 1000 });
+                        const token = jwt.sign(
+                            {
+                                id: user.id,
+                                usuario: user.usuario,
+                                correo: user.correo,
+                                isAdmin,
+                            },
+                            process.env.JWT_SECRET,
+                            { expiresIn: '24h' }
+                        );
+
+                        res.cookie('authToken', token, {
+                            maxAge: 24 * 60 * 60 * 1000,
+                            httpOnly: true,
+                            sameSite: 'None',
+                            secure: process.env.NODE_ENV === 'production',
+                        });
+
                         return res.status(200).send({
                             id: user.id,
                             usuario: user.usuario,

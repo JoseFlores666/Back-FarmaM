@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const {authenticate,verificarCodigo} = require('../middlewares/authMiddleware');
 const login = require('../controllers/Login/authLogin');
 const register = require('../controllers/Register/Register');
 const verifyOtp = require('../controllers/verifyOtp');
@@ -18,7 +19,8 @@ const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../cont
 
 router.post('/login', login);
 router.post('/register', validateRegister, register);
-router.post('/verifyOtp', verifyOtp);
+
+router.post('/verifyOtp',verificarCodigo, verifyOtp);
 
 // Gestión De Usuarios
 router.get('/getUsuariosAll', getUsuariosAll); 
@@ -32,57 +34,57 @@ router.post('/verificarToken', verificarToken);
 
 //CRUD Politicas esta listo de momento
 router.get('/getPoliticas', getPoliticas);
-router.post('/add_politica', createPolitica);
-router.put('/edit_politica/:id', updatePolitica);
-router.delete('/delete_politica/:id', deletePolitica);
+router.post('/add_politica', authenticate, createPolitica);
+router.put('/edit_politica/:id', authenticate, updatePolitica);
+router.delete('/delete_politica/:id', authenticate, deletePolitica);
 router.get('/getCurrentPolitica/', getCurrentPolitica);
 
 //CRUD Terminos
 router.get('/getTerminosCondiciones', getTerminosCondiciones);
-router.post('/createTerminosCondiciones', createTerminosCondiciones);
-router.put('/updateTerminosCondiciones/:id', updateTerminosCondiciones);
-router.delete('/deleteTerminosCondiciones/:id', deleteTerminosCondiciones);
+router.post('/createTerminosCondiciones', authenticate, createTerminosCondiciones);
+router.put('/updateTerminosCondiciones/:id', authenticate, updateTerminosCondiciones);
+router.delete('/deleteTerminosCondiciones/:id', authenticate, deleteTerminosCondiciones);
 router.get('/getCurrentTerminos/', getCurrentTerminos);
 
 //CRUD Deslinde
 router.get('/getDeslindesLegales', getDeslindesLegales);
-router.post('/createDeslindeLegal', createDeslindeLegal);
-router.put('/updateDeslindeLegal/:id', updateDeslindeLegal);
-router.delete('/deleteDeslindeLegal/:id', deleteDeslindeLegal);
+router.post('/createDeslindeLegal', authenticate, createDeslindeLegal);
+router.put('/updateDeslindeLegal/:id', authenticate, updateDeslindeLegal);
+router.delete('/deleteDeslindeLegal/:id', authenticate, deleteDeslindeLegal);
 router.get('/getCurrentDeslindes/', getCurrentDeslindes);
 
 //CRUD enlaces
 router.get('/getEnlaces', getEnlaces);
-router.post('/createEnlace', createEnlace);
-router.put('/updateEnlace/:id', updateEnlace);
-router.delete('/deleteEnlace/:id', deleteEnlace);
+router.post('/createEnlace', authenticate, createEnlace);
+router.put('/updateEnlace/:id', authenticate, updateEnlace);
+router.delete('/deleteEnlace/:id', authenticate, deleteEnlace);
 
 //CrudEslogan
 router.get('/getEslogan', getEslogan);
-router.post('/createEslogan', createEslogan);
-router.put('/updateEslogan/:id', updateEslogan);
-router.delete('/deleteEslogan/:id', deleteEslogan);
+router.post('/createEslogan', authenticate, createEslogan);
+router.put('/updateEslogan/:id', authenticate, updateEslogan);
+router.delete('/deleteEslogan/:id', authenticate, deleteEslogan);
 
 //CrudTittle
 router.get('/getTitle', getTitle);
-router.post('/createTitle', createTitle);
-router.put('/updateTitle/:id', updateTitle);
-router.delete('/deleteTitle/:id', deleteTitle);
+router.post('/createTitle', authenticate, createTitle);
+router.put('/updateTitle/:id', authenticate, updateTitle);
+router.delete('/deleteTitle/:id', authenticate, deleteTitle);
 
 //CrudContact
 router.get('/getContactInfo', getContactInfo);
-router.post('/upsertContactInfo', upsertContactInfo);
-router.delete('/deleteContactInfo/:id', deleteContactInfo);
+router.post('/upsertContactInfo', authenticate, upsertContactInfo);
+router.delete('/deleteContactInfo/:id', authenticate, deleteContactInfo);
 
 //CrudLogo
 router.get('/getAllLogos', getAllLogos);
 router.get('/getLogoActivo', getLogoActivo);
-router.put('/updateLogo/:id', updateLogo);
-router.post('/uploadLogo', uploadLogo);
-router.delete('/deleteLogo/:id', deleteLogo);
+router.put('/updateLogo/:id', authenticate, updateLogo);
+router.post('/uploadLogo', authenticate, uploadLogo);
+router.delete('/deleteLogo/:id', authenticate, deleteLogo);
 
 //CrudAuditoria
-router.post('/createAudit', createAudit);
+router.post('/createAudit', authenticate, createAudit);
 router.get('/getAuditLogs', getAuditLogs);
 
 module.exports = router;
