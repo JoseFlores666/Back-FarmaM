@@ -4,7 +4,6 @@ const sanitizeHtml = require('sanitize-html');
 const sendVerificationEmail = require('../testEmail');
 const crypto = require('crypto');
 
-// Generar el código de verificación
 const generateVerificationCode = () => {
     return crypto.randomBytes(3).toString('hex');
 };
@@ -67,11 +66,11 @@ const register = async (req, res) => {
 
                     const verificationCode = generateVerificationCode();
 
-                    // Establecer cookie con el código de verificación y 15 minutos de expiración
+                    //sameSite = None permite que otros dominios puedan utilizar cookies 
                     res.cookie('verificationCode', verificationCode, {
-                        httpOnly: true, // Más seguro, no accesible desde JavaScript
-                        secure: process.env.NODE_ENV === 'production', // Solo enviar en HTTPS en producción
-                        maxAge: 15 * 60 * 1000, // 15 minutos
+                        httpOnly: true, 
+                        secure: process.env.NODE_ENV === 'production', 
+                        maxAge: 15 * 60 * 1000, 
                         sameSite: 'None', 
                     });
 

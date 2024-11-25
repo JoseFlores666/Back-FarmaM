@@ -4,7 +4,7 @@ const login = require('../controllers/Login/authLogin');
 const register = require('../controllers/Register/Register');
 const verifyOtp = require('../controllers/verifyOtp');
 const { validateRegister } = require('../middlewares/validators');
-const { recuperarPassword, cambiarPassword } = require('../controllers/recuperarPassword');
+const { recuperarPassword, cambiarPassword, verificarToken } = require('../controllers/recuperarPassword');
 const { getDeslindesLegales, createDeslindeLegal, updateDeslindeLegal, deleteDeslindeLegal, getCurrentDeslindes } = require('../controllers/Doc-Regulatorio/CrudDeslinde');
 const { getPoliticas, createPolitica, updatePolitica, deletePolitica, getCurrentPolitica } = require('../controllers/Doc-Regulatorio/CrudPoliticas');
 const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondiciones, deleteTerminosCondiciones, getCurrentTerminos } = require('../controllers/Doc-Regulatorio/CrudTerminosYC');
@@ -28,6 +28,7 @@ router.put('/desbloquearUsuario/:id', desbloquearUsuario);
 //recuperacion y cambio de passw
 router.post('/recuperar-password', recuperarPassword);
 router.post('/cambiar-password', cambiarPassword);
+router.post('/verificarToken', verificarToken);
 
 //CRUD Politicas esta listo de momento
 router.get('/getPoliticas', getPoliticas);
