@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {authenticate,verificarCodigo} = require('../middlewares/authMiddleware');
+const {authenticate} = require('../middlewares/authMiddleware');
 const login = require('../controllers/Login/authLogin');
 const register = require('../controllers/Register/Register');
 const verifyOtp = require('../controllers/verifyOtp');
@@ -20,7 +20,7 @@ const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../cont
 router.post('/login', login);
 router.post('/register', validateRegister, register);
 
-router.post('/verifyOtp',verificarCodigo, verifyOtp);
+router.post('/verifyOtp', verifyOtp);
 
 // Gestión De Usuarios
 router.get('/getUsuariosAll', getUsuariosAll); 

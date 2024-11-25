@@ -19,7 +19,12 @@ const login = (req, res) => {
 
             const user = result[0];
 
-            // Verificar si existe la cookie de desbloqueo
+            if (user.isVerified === 0) {
+                return res.status(403).send({ 
+                    message: 'Tu cuenta aún no ha sido verificada. Por favor verifica tu correo antes de iniciar sesión.' 
+                });
+            }
+
             const unlockToken = req.cookies.unlockToken;
 
             if (unlockToken) {
@@ -40,14 +45,13 @@ const login = (req, res) => {
                         return;
                     }
                 } catch (error) {
-                    res.clearCookie('unlockToken'); // Limpiar la cookie si es inválida o expirada
+                    res.clearCookie('unlockToken'); 
                 }
             }
 
             if (user.intentos >= 5) {
                 if (!unlockToken) {
-                    // Generar un token de desbloqueo si aún no existe
-                    const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 horas
+                    const expiresAt = Date.now() + 24 * 60 * 60 * 1000; 
                     const unlockJwt = jwt.sign(
                         { userId: user.id, expiresAt },
                         process.env.JWT_SECRET,
@@ -58,7 +62,7 @@ const login = (req, res) => {
                         httpOnly: true,
                         secure: process.env.NODE_ENV === 'production',
                         sameSite: 'None',
-                        maxAge: 24 * 60 * 60 * 1000, // 24 horas
+                        maxAge: 24 * 60 * 60 * 1000, 
                     });
                 }
                 return res.status(403).send({ message: 'Tu cuenta está bloqueada debido a múltiples intentos fallidos. Se desbloqueará automáticamente después de 24 horas.' });
