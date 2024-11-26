@@ -13,7 +13,6 @@ const getEslogan = async (req, res) => {
         }
 
         if (!Array.isArray(result)) {
-            console.error('El resultado no es un array:', result);
             return res.status(500).json({ message: "Error en el servidor, resultado no válido" });
         }
 
@@ -45,23 +44,32 @@ const updateEslogan = (req, res) => {
 
         const oldEslogan = result[0].eslogan;
 
+        // Verifica si el eslogan es igual al actual
         if (oldEslogan === eslogan) {
-            return res.status(400).json({ message: "El eslogan ingresado es igual al existente." });
+            return res.status(200).json({ 
+                success: true, 
+                message: "El eslogan ingresado ya está actualizado.", 
+                eslogan 
+            });
         }
 
         const updateSql = "UPDATE eslogan SET eslogan = ? WHERE id = 1";
         db.query(updateSql, [eslogan], (err) => {
             if (err) {
-                console.error('Error al actualizar el eslogan:', err);
                 return res.status(500).json({ message: "Error al actualizar el eslogan" });
             }
 
             createAudit(req, 'Actualizacion', 'eslogan', oldEslogan, eslogan);
 
-            return res.json({ success: "Eslogan actualizado correctamente" });
+            return res.status(200).json({ 
+                success: true, 
+                message: "Eslogan actualizado correctamente.", 
+                eslogan 
+            });
         });
     });
 };
+
 
 const createEslogan = async (req, res) => {
     const { eslogan } = req.body; 

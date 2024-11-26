@@ -24,7 +24,6 @@ const getContactInfo = (req, res) => {
         return res.json(result[0]);
     });
 };
-
 const upsertContactInfo = (req, res) => {
     const { direccion, email, telefono } = req.body;
 
@@ -47,18 +46,31 @@ const upsertContactInfo = (req, res) => {
         }
 
         if (result.length > 0) {
+            const existingData = result[0];
+
+            // Verificar si los datos son iguales
+            if (
+                existingData.direccion === direccion &&
+                existingData.email === email &&
+                existingData.telefono === telefono
+            ) {
+                return res.status(200).json({ message: "Los datos de contacto no han cambiado. No se realizó ninguna actualización." });
+            }
+
+            // Actualizar si los datos son diferentes
             const updateSql = "UPDATE datos_contacto SET direccion = ?, email = ?, telefono = ?, fecha_actualizacion = NOW() WHERE id = ?";
-            db.query(updateSql, [direccion, email, telefono, result[0].id], (err) => {
+            db.query(updateSql, [direccion, email, telefono, existingData.id], (err) => {
                 if (err) {
                     console.error('Error al actualizar los datos de contacto:', err);
                     return res.status(500).json({ message: "Error al actualizar los datos de contacto" });
                 }
 
-                createAudit(req, 'Actualizar', 'datos_contacto', `direccion: ${result[0].direccion}, email: ${result[0].email}, telefono: ${result[0].telefono}`, `direccion: ${direccion}, email: ${email}, telefono: ${telefono}`);
+                createAudit(req, 'Actualizar', 'datos_contacto', `direccion: ${existingData.direccion}, email: ${existingData.email}, telefono: ${existingData.telefono}`, `direccion: ${direccion}, email: ${email}, telefono: ${telefono}`);
 
                 return res.json({ success: "Datos de contacto actualizados correctamente" });
             });
         } else {
+            // Insertar si no hay datos existentes
             const insertSql = "INSERT INTO datos_contacto (direccion, email, telefono, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, NOW(), NOW())";
             db.query(insertSql, [direccion, email, telefono], (err, result) => {
                 if (err) {

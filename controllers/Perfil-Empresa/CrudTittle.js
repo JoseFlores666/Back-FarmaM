@@ -47,9 +47,16 @@ const updateTitle = async (req, res) => {
             return res.status(404).json({ message: "No se encontró el registro para actualizar." });
         }
 
-        const oldTitle = results[0].title; 
+        const oldTitle = results[0].title;
+
+        // Verifica si el título es el mismo
         if (oldTitle === title) {
-            return res.status(400).json({ message: "El título ingresado es igual al existente." });
+            return res.status(200).json({ 
+                success: true, 
+                message: "El título ingresado ya está actualizado.", 
+                id, 
+                title 
+            });
         }
 
         const sqlUpdate = "UPDATE settings SET title = ? WHERE id = ?";
@@ -66,6 +73,7 @@ const updateTitle = async (req, res) => {
         });
     });
 };
+
 
 
 const deleteTitle = async (req, res) => {
