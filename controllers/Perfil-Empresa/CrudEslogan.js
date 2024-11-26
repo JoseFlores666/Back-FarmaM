@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../config/db');
+const { createAudit } = require('./CrudAuditoria');  
 
 const getEslogan = async (req, res) => {
     const sql = "SELECT * FROM eslogan LIMIT 1";
@@ -31,14 +32,34 @@ const updateEslogan = (req, res) => {
         return res.status(400).json({ message: 'Eslogan inválido. Debe ser una cadena de texto válida.' });
     }
 
-    const updateSql = "UPDATE eslogan SET eslogan = ? WHERE id = 1";
-    
-    db.query(updateSql, [eslogan], (err) => {
+    const selectSql = "SELECT eslogan FROM eslogan WHERE id = 1";
+    db.query(selectSql, (err, result) => {
         if (err) {
-            console.error('Error al actualizar el eslogan:', err);
-            return res.status(500).json({ message: "Error al actualizar el eslogan" });
+            console.error('Error al consultar el eslogan existente:', err);
+            return res.status(500).json({ message: "Error al consultar el eslogan actual" });
         }
-        return res.json({ success: "Eslogan actualizado correctamente" });
+
+        if (result.length === 0) {
+            return res.status(404).json({ message: "No se encontró el eslogan para actualizar." });
+        }
+
+        const oldEslogan = result[0].eslogan;
+
+        if (oldEslogan === eslogan) {
+            return res.status(400).json({ message: "El eslogan ingresado es igual al existente." });
+        }
+
+        const updateSql = "UPDATE eslogan SET eslogan = ? WHERE id = 1";
+        db.query(updateSql, [eslogan], (err) => {
+            if (err) {
+                console.error('Error al actualizar el eslogan:', err);
+                return res.status(500).json({ message: "Error al actualizar el eslogan" });
+            }
+
+            createAudit(req, 'Actualizacion', 'eslogan', oldEslogan, eslogan);
+
+            return res.json({ success: "Eslogan actualizado correctamente" });
+        });
     });
 };
 
