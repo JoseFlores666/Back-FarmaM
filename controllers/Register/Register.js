@@ -3,97 +3,94 @@ const connection = require('../../config/db');
 const sanitizeHtml = require('sanitize-html');
 const sendVerificationEmail = require('../testEmail');
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken'); 
 
-const generateVerificationCode = () => {
-    return crypto.randomBytes(3).toString('hex');
-};
+const generateVerificationCode = () => crypto.randomBytes(3).toString('hex');
 
-const register = async (req, res) => {
+const register = (req, res) => {
     try {
         const { usuario, nombre, apellidoPaterno, apellidoMaterno, edad, telefono, genero, correo, password } = req.body;
 
         if (!usuario || !nombre || !apellidoPaterno || !correo || !password) {
-            return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
+            return res.status(400).json({ message: 'Todos los campos obligatorios deben ser llenados.' });
         }
 
-        const sanitizedUsuario = sanitizeHtml(usuario);
-        const sanitizedNombre = sanitizeHtml(nombre);
-        const sanitizedApellidoPaterno = sanitizeHtml(apellidoPaterno);
-        const sanitizedApellidoMaterno = sanitizeHtml(apellidoMaterno);
-        const sanitizedCorreo = sanitizeHtml(correo);
-        const sanitizedTelefono = sanitizeHtml(telefono);
-        const sanitizedGenero = sanitizeHtml(genero);
+        const sanitizedData = {
+            usuario: sanitizeHtml(usuario),
+            nombre: sanitizeHtml(nombre),
+            apellidoPaterno: sanitizeHtml(apellidoPaterno),
+            apellidoMaterno: sanitizeHtml(apellidoMaterno),
+            correo: sanitizeHtml(correo),
+            telefono: sanitizeHtml(telefono),
+            genero: sanitizeHtml(genero),
+            edad: parseInt(edad),
+        };
 
-        connection.query("SELECT * FROM usuarios WHERE correo = ?", [sanitizedCorreo], (err, result) => {
-            if (err) {
-                console.error('Error en la consulta de correo:', err);
-                return res.status(500).json({ message: 'Ocurrió un error, por favor inténtalo de nuevo más tarde.' });
-            }
-
-            if (result.length > 0) {
-                return res.status(400).json({ message: 'El correo ya está registrado.' });
-            }
-
-            connection.query("SELECT * FROM usuarios WHERE telefono = ?", [sanitizedTelefono], (err, phoneResult) => {
+        connection.query(
+            "SELECT usuario, correo, telefono FROM usuarios WHERE usuario = ? OR correo = ? OR telefono = ?",
+            [sanitizedData.usuario, sanitizedData.correo, sanitizedData.telefono],
+            (err, results) => {
                 if (err) {
-                    console.error('Error en la consulta de teléfono:', err);
-                    return res.status(500).json({ message: 'Ocurrió un error, por favor inténtalo de nuevo más tarde.' });
+                    console.error('Error en la consulta:', err);
+                    return res.status(500).json({ message: 'Error al verificar usuario.' });
                 }
 
-                if (phoneResult.length > 0) {
-                    return res.status(400).json({ message: 'El teléfono ya está registrado.' });
+                if (results.length > 0) {
+                    return res.status(400).json({ message: 'El usuario, correo o teléfono ya están en uso.' });
                 }
 
-                const hashedPassword = bcrypt.hashSync(password, 10);
+                sanitizedData.password = bcrypt.hashSync(password, 10);
 
-                const newUser = {
-                    usuario: sanitizedUsuario,
-                    nombre: sanitizedNombre,
-                    apellidoPaterno: sanitizedApellidoPaterno,
-                    apellidoMaterno: sanitizedApellidoMaterno,
-                    edad,
-                    telefono: sanitizedTelefono,
-                    genero: sanitizedGenero,
-                    correo: sanitizedCorreo,
-                    password: hashedPassword,
-                };
+                connection.query(
+                    "INSERT INTO usuarios SET ?",
+                    sanitizedData,
+                    (err, result) => {
+                        if (err) {
+                            console.error('Error al insertar usuario:', err);
+                            return res.status(500).json({ message: 'Error al registrar usuario.' });
+                        }
 
-                connection.query("INSERT INTO usuarios SET ?", newUser, (err, userInsertResult) => {
-                    if (err) {
-                        console.error('Error al registrar el usuario:', err);
-                        return res.status(500).json({ message: 'Ocurrió un error al registrar el usuario.' });
+                        const userId = result.insertId;
+
+                        connection.query(
+                            "INSERT INTO seguridad (user_id, isVerified, intentos) VALUES (?, 0, 0)",
+                            [userId, 0, 0],
+                            (err) => {
+                                if (err) {
+                                    console.error('Error al insertar en seguridad:', err);
+                                    return res.status(500).json({ message: 'Error al configurar seguridad.' });
+                                }
+
+                                const verificationCode = generateVerificationCode();
+                                const expiresAt = new Date(Date.now() + 15 * 60 * 1000); 
+
+                                connection.query(
+                                    "INSERT INTO auth_codes (user_id, code, expires_at, used) VALUES (?, ?, ?, FALSE)",
+                                    [userId, verificationCode, expiresAt],
+                                    (err) => {
+                                        if (err) {
+                                            console.error('Error al guardar código de verificación:', err);
+                                            return res.status(500).json({ message: 'Error al generar el código de verificación.' });
+                                        }
+
+                                        sendVerificationEmail(verificationCode, sanitizedData.correo, sanitizedData.usuario)
+                                            .then(() => {
+                                                return res.status(200).json({ message: 'Registro exitoso. Revisa tu correo para la verificación.' });
+                                            })
+                                            .catch((emailErr) => {
+                                                console.error('Error enviando el correo:', emailErr);
+                                                return res.status(500).json({ message: 'Registro exitoso, pero ocurrió un error al enviar el correo.' });
+                                            });
+                                    }
+                                );
+                            }
+                        );
                     }
-
-                    const verificationCode = generateVerificationCode();
-
-                    const token = jwt.sign(
-                        { verificationCode, correo: sanitizedCorreo }, 
-                        process.env.JWT_SECRET, 
-                        { expiresIn: '15m' } 
-                    );
-
-                    res.cookie('verificationToken', token, {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production', 
-                        maxAge: 15 * 60 * 1000, 
-                        sameSite: 'None', 
-                    });
-
-                    try {
-                        sendVerificationEmail(verificationCode, sanitizedCorreo, sanitizedUsuario);
-                        return res.status(200).json({ message: 'Registro exitoso! Un código de verificación ha sido enviado a tu correo.' });
-                    } catch (emailError) {
-                        console.error('Error al enviar el correo de verificación:', emailError);
-                        return res.status(500).json({ message: 'Ocurrió un error al enviar el correo de verificación.' });
-                    }
-                });
-            });
-        });
-
+                );
+            }
+        );
     } catch (error) {
-        console.error('Error general en el registro:', error);
-        return res.status(500).json({ message: 'Ocurrió un error inesperado. Inténtalo de nuevo más tarde.' });
+        console.error('Error en el registro:', error);
+        return res.status(500).json({ message: 'Error inesperado. Intenta de nuevo más tarde.' });
     }
 };
 

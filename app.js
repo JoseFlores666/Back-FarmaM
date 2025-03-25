@@ -35,7 +35,8 @@ const allowedOrigins = [
     'http://localhost:4000',
     'https://localhost:5173',
     'https://localhost:4000',
-    'https://farma-medic.vercel.app'
+    'https://farma-medic.vercel.app',
+    'https://localhost'
 ];
 
 app.use(
@@ -59,11 +60,12 @@ const sessionStore = new MySQLStore({
     clearExpired: true,
     checkExpirationInterval: 900000,
     expiration: 86400000,
+    createDatabaseTable:true
 });
 
 //true = https y si es false = http
 //al desplegar el backend a render tiene que estar en false
-const useHttps = false;
+const useHttps = true;
 
 app.use(
     session({
@@ -75,8 +77,8 @@ app.use(
         cookie: {
             httpOnly: true,
             secure: useHttps, 
-            sameSite: 'None', 
-            maxAge: 30 * 60 * 1000, 
+            sameSite: 'strict', 
+            maxAge: 15 * 60 * 1000, 
         },
     })
 );
@@ -88,13 +90,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    max: 5000,
-    message: 'Demasiadas solicitudes desde esta IP, por favor inténtalo de nuevo más tarde.',
-});
+// const limiter = rateLimit({
+//     windowMs: 15 * 60 * 1000, 
+//     max: 25000,
+//     message: 'Demasiadas solicitudes desde esta IP, por favor inténtalo de nuevo más tarde.',
+// });
 
-app.use(limiter);
+// app.use(limiter);
 
 app.use('/api', authRoutes);
 

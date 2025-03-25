@@ -1,135 +1,94 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const connection = require('../../config/db');
+    const bcrypt = require('bcryptjs');
+    const db = require('../../config/db');
 
-const login = (req, res) => {
-    const { correo, password } = req.body;
+    const login = (req, res) => {
+        const { correo, password } = req.body;
 
-    connection.query(
-        "SELECT u.*, r.nombre AS rolNombre FROM usuarios u JOIN roles r ON u.rol_id = r.id WHERE u.correo = ?",
-        [correo],
-        (err, result) => {
-            if (err) {
-                return res.status(500).send('Ocurrió un error, por favor inténtalo de nuevo más tarde.');
-            }
+        db.query(
+            `SELECT u.*, r.id AS rolId, r.nombre AS rolNombre, s.isVerified, s.intentos 
+            FROM usuarios u 
+            JOIN roles r ON u.rol_id = r.id 
+            JOIN seguridad s ON u.id = s.user_id
+            WHERE u.correo = ?`,
+            [correo],
+            (err, result) => {
+                if (err) {
+                    console.error("Error en la consulta:", err);
+                    return res.status(500).json({ message: 'Ocurrió un error, por favor inténtalo de nuevo más tarde.' });
+                }
 
-            if (result.length === 0) {
-                return res.status(400).send('Credenciales inválidas');
-            }
-
-            const user = result[0];
-
-            if (user.isVerified === 0) {
-                return res.status(403).send({ 
-                    message: 'Tu cuenta aún no ha sido verificada. Por favor verifica tu correo antes de iniciar sesión.' 
-                });
-            }
-
-            const unlockToken = req.cookies.unlockToken;
-
-            if (unlockToken) {
-                try {
-                    const decoded = jwt.verify(unlockToken, process.env.JWT_SECRET);
-                    if (decoded.userId === user.id && decoded.expiresAt > Date.now()) {
-                        connection.query(
-                            "UPDATE usuarios SET intentos = 0 WHERE id = ?",
-                            [user.id],
-                            (resetErr) => {
-                                if (resetErr) {
-                                    return res.status(500).send('Error al desbloquear la cuenta.');
-                                }
-                                res.clearCookie('unlockToken');
-                                return res.status(200).send({ message: 'Tu cuenta ha sido desbloqueada automáticamente. Por favor, inicia sesión nuevamente.' });
-                            }
-                        );
-                        return;
-                    }
-                } catch (error) {
-                    res.clearCookie('unlockToken'); 
+                if (result.length > 0) {
+                    return procesarLoginUsuario(req, res, result[0], password);
+                } else {
+                    return res.status(400).json({ message: 'Credenciales inválidas' });
                 }
             }
+        );
+    };
 
-            if (user.intentos >= 5) {
-                if (!unlockToken) {
-                    const expiresAt = Date.now() + 24 * 60 * 60 * 1000; 
-                    const unlockJwt = jwt.sign(
-                        { userId: user.id, expiresAt },
-                        process.env.JWT_SECRET,
-                        { expiresIn: '24h' }
-                    );
-
-                    res.cookie('unlockToken', unlockJwt, {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: 'None',
-                        maxAge: 24 * 60 * 60 * 1000, 
-                    });
-                }
-                return res.status(403).send({ message: 'Tu cuenta está bloqueada debido a múltiples intentos fallidos. Se desbloqueará automáticamente después de 24 horas.' });
-            }
-
-            const passwordIsValid = bcrypt.compareSync(password, user.password);
-
-            if (!passwordIsValid) {
-                const nuevosIntentos = user.intentos + 1;
-
-                connection.query(
-                    "UPDATE usuarios SET intentos = ? WHERE id = ?",
-                    [nuevosIntentos, user.id],
-                    (updateErr) => {
-                        if (updateErr) {
-                            return res.status(500).send('Ocurrió un error al actualizar los intentos.');
-                        }
-
-                        if (nuevosIntentos >= 5) {
-                            return res.status(403).send({ message: 'Tu cuenta ha sido bloqueada debido a múltiples intentos fallidos. Se desbloqueará automáticamente después de 24 horas.' });
-                        }
-
-                        return res.status(400).send({
-                            message: `Credenciales inválidas. Intentos restantes: ${5 - nuevosIntentos}`
-                        });
-                    }
-                );
-            } else {
-                connection.query(
-                    "UPDATE usuarios SET intentos = 0 WHERE id = ?",
-                    [user.id],
-                    (resetErr) => {
-                        if (resetErr) {
-                            return res.status(500).send('Ocurrió un error al restablecer los intentos.');
-                        }
-
-                        const isAdmin = user.rolNombre === 'admin';
-
-                        const token = jwt.sign(
-                            {
-                                id: user.id,
-                                usuario: user.usuario,
-                                correo: user.correo,
-                                isAdmin,
-                            },
-                            process.env.JWT_SECRET,
-                            { expiresIn: '24h' }
-                        );
-
-                        res.cookie('authToken', token, {
-                            maxAge: 24 * 60 * 60 * 1000,
-                            httpOnly: true,
-                            sameSite: 'None',
-                            secure: process.env.NODE_ENV === 'production',
-                        });
-
-                        return res.status(200).send({
-                            id: user.id,
-                            usuario: user.usuario,
-                            correo: user.correo,
-                            isAdmin,
-                        });
-                    }
-                );
-            }
+    const procesarLoginUsuario = (req, res, user, password) => {
+        if (user.isVerified === 0) {
+            return res.status(403).json({ message: 'Tu cuenta aún no ha sido verificada. Por favor verifica tu correo antes de iniciar sesión.' });
         }
-    );
-};
 
-module.exports = login;
+        if (user.intentos >= 5) {
+            return res.status(403).json({ message: 'Tu cuenta está bloqueada. Se desbloqueará automáticamente después de 24 horas.' });
+        }
+
+        const passwordIsValid = bcrypt.compareSync(password, user.password);
+        if (!passwordIsValid) {
+            const nuevosIntentos = user.intentos + 1;
+            db.query("UPDATE seguridad SET intentos = ? WHERE user_id = ?", [nuevosIntentos, user.id], (updateErr) => {
+                if (updateErr) {
+                    console.error("Error al actualizar intentos:", updateErr);
+                    return res.status(500).json({ message: 'Error al actualizar los intentos.' });
+                }
+                return res.status(400).json({ message: `Credenciales inválidas. Intentos restantes: ${5 - nuevosIntentos}` });
+            });
+            return;
+        }
+
+        db.query("UPDATE seguridad SET intentos = 0 WHERE user_id = ?", [user.id], (resetErr) => {
+            if (resetErr) {
+                console.error("Error al resetear intentos:", resetErr);
+                return res.status(500).json({ message: 'Error al restablecer los intentos.' });
+            }
+
+            let userData = {
+                id: user.id,
+                usuario: user.usuario,
+                isAdmin: false,  
+                role: user.rolId,
+            };
+            guardarSesionYResponder(req, res, userData);
+        });
+    };
+
+    const guardarSesionYResponder = (req, res, userData) => {
+        req.session.user = userData;
+
+        res.status(200).json({
+            message: "Sesión iniciada correctamente",
+            user: userData
+        });
+    };
+
+    const consultaSesion = (req, res) => {
+        if (req.session.user) {
+            res.status(200).json(req.session.user);
+        }
+        else {
+            res.status(401).json({ message: 'No autenticado' });
+        }
+    };
+
+    const cerrarSesion = (req, res) => {
+        req.session.destroy(err => {
+            if (err) return res.status(500).json({ message: 'Error al cerrar sesión' });
+
+            res.clearCookie('user_sid');
+            res.status(200).json({ message: 'Sesión cerrada' });
+        });
+    };
+
+    module.exports = { login, cerrarSesion, consultaSesion };

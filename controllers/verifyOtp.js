@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
-const jwt = require('jsonwebtoken'); 
 const { body, validationResult } = require('express-validator');
 
 router.use(express.json());
@@ -15,42 +14,74 @@ const verifyOtp = async (req, res) => {
   const { correo, otp } = req.body;
 
   try {
-    const token = req.cookies.verificationToken; 
-
-    if (!token) {
-      return res.status(400).json({ message: 'El token de verificación ha expirado o no existe.' });
-    }
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (error) {
-      return res.status(400).json({ message: 'El token de verificación no es válido o ha expirado.' });
-    }
-
-    const expectedOtp = decoded.verificationCode; 
-
-    if (otp !== expectedOtp) {
-      return res.status(400).json({ message: 'El código de verificación es incorrecto.' });
-    }
-
+    // Buscar el usuario por correo
     db.query(
-      'UPDATE usuarios SET isVerified = 1 WHERE correo = ?',
+      'SELECT id FROM usuarios WHERE correo = ?',
       [correo],
-      (err, result) => {
+      (err, results) => {
         if (err) {
-          return res.status(500).json({ message: 'Error al actualizar el estado de verificación.' });
+          console.error('Error en la consulta de usuario:', err);
+          return res.status(500).json({ message: 'Error al verificar el usuario.' });
         }
 
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ message: 'Usuario no encontrado o ya verificado.' });
+        if (results.length === 0) {
+          return res.status(404).json({ message: 'Usuario no encontrado.' });
         }
 
-        res.clearCookie('verificationToken');
-        return res.status(200).json({ message: 'Verificación exitosa.' });
+        const userId = results[0].id;
+
+        // Buscar el código de verificación en la base de datos
+        db.query(
+          'SELECT * FROM auth_codes WHERE user_id = ? AND code = ? AND used = FALSE',
+          [userId, otp],
+          (err, codeResults) => {
+            if (err) {
+              console.error('Error en la consulta del código:', err);
+              return res.status(500).json({ message: 'Error al verificar el código.' });
+            }
+
+            if (codeResults.length === 0) {
+              return res.status(400).json({ message: 'Código de verificación incorrecto o ya utilizado.' });
+            }
+
+            const authCode = codeResults[0];
+
+            // Verificar si el código ha expirado
+            if (new Date(authCode.expires_at) < new Date()) {
+              return res.status(400).json({ message: 'El código ha expirado.' });
+            }
+
+            // Marcar el código como usado
+            db.query(
+              'UPDATE auth_codes SET used = TRUE WHERE id = ?',
+              [authCode.id],
+              (err) => {
+                if (err) {
+                  console.error('Error al actualizar el código:', err);
+                  return res.status(500).json({ message: 'Error al actualizar el código de verificación.' });
+                }
+
+                // Marcar al usuario como verificado
+                db.query(
+                  'UPDATE seguridad SET isVerified = 1 WHERE user_id = ?',
+                  [userId],
+                  (err) => {
+                    if (err) {
+                      console.error('Error al actualizar estado de verificación:', err);
+                      return res.status(500).json({ message: 'Error al actualizar estado de verificación.' });
+                    }
+
+                    return res.status(200).json({ message: 'Verificación exitosa.' });
+                  }
+                );
+              }
+            );
+          }
+        );
       }
     );
   } catch (err) {
+    console.error('Error en la verificación del código:', err);
     return res.status(500).json({ message: 'Error al verificar el código de verificación.' });
   }
 };

@@ -1,35 +1,25 @@
 const connection = require('../../config/db');
-const jwt = require('jsonwebtoken');
 
-const createAudit = (req, action_type, table_name, old_data, new_data) => {
-  const token = req.cookies.authToken;
+const createAudit = (id_usuario, action_type, table_name, old_data, new_data) => {
+  const sql = `INSERT INTO auditoria (id_usuario, action_type, table_name, old_data, new_data) 
+               VALUES (?, ?, ?, ?, ?)`;
 
-  if (!token) {
-    console.error('No se encontró la cookie de autenticación.');
-    return;
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const admin_usuario = decoded.usuario;
-
-    const sql = `INSERT INTO auditoria (admin_usuario, action_type, table_name, old_data, new_data) 
-                 VALUES (?, ?, ?, ?, ?)`;
-
-    connection.query(sql, [admin_usuario, action_type, table_name, old_data, new_data], (err) => {
-      if (err) {
-        console.error('Error al crear el registro de auditoría:', err);
-      } else {
-        console.log('Registro de auditoría creado exitosamente.');
-      }
-    });
-  } catch (err) {
-    console.error('Error al decodificar el token JWT:', err);
-  }
+  connection.query(sql, [id_usuario, action_type, table_name, old_data, new_data], (err, result) => {
+    if (err) {
+      console.error("Error al crear el registro de auditoría:", err);
+    } else {
+      console.log("Registro de auditoría creado exitosamente, ID:", result.insertId);
+    }
+  });
 };
 
 const getAuditLogs = (req, res) => {
-  const sql = "SELECT * FROM auditoria";
+  const sql = `
+    SELECT a.id, u.nombre AS usuario, a.action_type, a.table_name, a.new_data,a.old_data, a.fecha_creacion
+    FROM auditoria a
+    LEFT JOIN usuarios u ON a.id_usuario = u.id
+    ORDER BY a.fecha_creacion DESC
+  `;
 
   connection.query(sql, (err, result) => {
     if (err) {

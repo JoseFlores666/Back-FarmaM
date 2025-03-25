@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../config/db');
-const { createAudit } = require('./CrudAuditoria');  
+const { createAudit } = require('./CrudAuditoria');
 
 const getEslogan = async (req, res) => {
     const sql = "SELECT * FROM eslogan LIMIT 1";
-    
+
     db.query(sql, (err, result) => {
         if (err) {
             console.error('Error en la consulta:', err);
@@ -44,12 +44,11 @@ const updateEslogan = (req, res) => {
 
         const oldEslogan = result[0].eslogan;
 
-        // Verifica si el eslogan es igual al actual
         if (oldEslogan === eslogan) {
-            return res.status(200).json({ 
-                success: true, 
-                message: "El eslogan ingresado ya está actualizado.", 
-                eslogan 
+            return res.status(200).json({
+                success: true,
+                message: "El eslogan ingresado ya está actualizado.",
+                eslogan
             });
         }
 
@@ -61,10 +60,10 @@ const updateEslogan = (req, res) => {
 
             createAudit(req, 'Actualizacion', 'eslogan', oldEslogan, eslogan);
 
-            return res.status(200).json({ 
-                success: true, 
-                message: "Eslogan actualizado correctamente.", 
-                eslogan 
+            return res.status(200).json({
+                success: true,
+                message: "Eslogan actualizado correctamente.",
+                eslogan
             });
         });
     });
@@ -72,8 +71,8 @@ const updateEslogan = (req, res) => {
 
 
 const createEslogan = async (req, res) => {
-    const { eslogan } = req.body; 
-    
+    const { eslogan } = req.body;
+
     const insertSql = "INSERT INTO eslogan (eslogan) VALUES (?)";
     try {
         await db.query(insertSql, [eslogan]);
@@ -85,7 +84,7 @@ const createEslogan = async (req, res) => {
 };
 
 const deleteEslogan = (req, res) => {
-    const deleteSql = "DELETE FROM eslogan WHERE id = 1"; 
+    const deleteSql = "DELETE FROM eslogan WHERE id = 1";
     db.query(deleteSql, (err) => {
         if (err) {
             console.error('Error al eliminar el eslogan:', err);
