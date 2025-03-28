@@ -30,6 +30,7 @@ app.use(helmet());
 const allowedOrigins = [
     'https://farmamedic.vercel.app',
     'https://isoftuthh.com',
+    'https://bina5.com',
     'https://back-farmam.onrender.com',
     'http://localhost:5173',
     'http://localhost:4000',
@@ -37,7 +38,6 @@ const allowedOrigins = [
     'https://localhost:4000',
     'https://farma-medic.vercel.app',
     'https://localhost',
-    'http://127.0.0.1'
 ];
 
 app.use(
