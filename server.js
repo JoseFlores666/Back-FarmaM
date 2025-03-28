@@ -4,7 +4,7 @@ const fs = require('fs');
 const app = require('./app');
 const path = require('path');
 
-const USE_HTTPS = true;
+const USE_HTTPS = false;
 
 let server;
 if (USE_HTTPS) {
