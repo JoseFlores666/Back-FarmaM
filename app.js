@@ -36,7 +36,8 @@ const allowedOrigins = [
     'https://localhost:5173',
     'https://localhost:4000',
     'https://farma-medic.vercel.app',
-    'https://localhost'
+    'https://localhost',
+    'http://127.0.0.1'
 ];
 
 app.use(

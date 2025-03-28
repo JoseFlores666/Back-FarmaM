@@ -19,17 +19,24 @@ const getExpediente = (req, res) => {
 
 const getExpedienteById = (req, res) => {
     const { id } = req.params;
-    const sql = 'SELECT * FROM expediente_medico WHERE id = ?';
+    const sql = `
+        SELECT em.*, p.nombre, p.foto_perfil, p.correo, p.genero
+        FROM expediente_medico em
+        JOIN usuarios p ON em.codpaci = p.id
+        WHERE em.codpaci = ?`; 
+
     db.query(sql, [id], (err, result) => {
         if (err) {
+            console.error("Error en la consulta del expediente:", err);
             return res.status(500).json({ message: "Error en el servidor" });
         }
         if (result.length === 0) {
             return res.status(404).json({ message: "Expediente no encontrado" });
         }
-        return res.json(result[0]);
+        return res.json(result[0]); 
     });
 };
+
 
 const createExpediente = (req, res) => {
     const { codpaci, antecedentes, alergias, enfermedades, medicamentos, notas, altura, peso, bmi, temperatura, presion_resp, presion_art, presion_card, tipo_sangre } = req.body;
