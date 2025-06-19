@@ -5,13 +5,16 @@ const db = require('../../config/db');
 const getCitas = (req, res) => {
     const sql = `
         SELECT c.*, 
-               p.nombre AS paciente, 
-               d.nomdoc AS doctor, 
+               c.id AS codcita,
+               c.fecha_creacion,
+               c.fecha,
+      CONCAT(p.nombre, ' ', p.apellidoPaterno, ' ', p.apellidoMaterno) AS paciente,
+    CONCAT(d.nomdoc, ' ', d.apepaternodoc, ' ' , d.apematernodoc) AS doctor,
                e.titulo AS especialidad, 
                h.dia AS dia_horario, 
                h.hora_inicio, 
                h.hora_fin,
-               h.estado
+               h.estado as estadohorario
         FROM citas c
         LEFT JOIN usuarios p ON c.codpaci = p.id
         LEFT JOIN doctor d ON c.coddoc = d.coddoc
@@ -29,9 +32,8 @@ const getCitas = (req, res) => {
 };
 
 const getCitasById = (req, res) => {
-    const { coddoc } = req.params; // Obtener el ID del doctor desde la URL
+    const { coddoc } = req.params;
 
-    // Validar si coddoc es un número válido
     if (!coddoc || isNaN(coddoc)) {
         return res.status(400).json({ message: "ID del doctor no válido o faltante" });
     }
@@ -73,41 +75,6 @@ const getCitasById = (req, res) => {
 };
 
 
-const reservarCita = (req, res) => {
-    const { id, codpaci, motivoCita } = req.body;
-    if (!id || !codpaci || !motivoCita) {
-        return res.status(400).json({ message: 'Faltan datos requeridos' });
-    }
-
-    const sqlSelect = `SELECT * FROM citas WHERE id = ? AND estado = 'Disponible'`;
-    db.query(sqlSelect, [id], (err, resultSelect) => {
-        if (err) {
-            console.error('Error al verificar la cita:', err);
-            return res.status(500).json({ message: 'Error al verificar la cita' });
-        }
-
-        if (resultSelect.length === 0) {
-            return res.status(404).json({ message: 'La cita no está disponible o no existe' });
-        }
-
-        const sql = `UPDATE citas 
-                     SET codpaci = ?, motivo_cita = ?, estado = 'Reservada' 
-                     WHERE id = ? AND estado = 'Disponible'`;
-
-        db.query(sql, [codpaci, motivoCita, id], (err, result) => {
-            if (err) {
-                console.error('Error al reservar la cita:', err);
-                return res.status(500).json({ message: 'Error al reservar la cita' });
-            }
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ message: 'La cita no está disponible o no existe' });
-            }
-
-            return res.json({ message: 'Cita reservada correctamente' });
-        });
-    });
-};
 
 const cancelarCita = (req, res) => {
     const { id, codpaci } = req.body;
@@ -151,43 +118,134 @@ const generarCitas = async (req, res) => {
 
     res.json({ message: 'Citas generadas correctamente y horario actualizado a Activo' });
 };
-
 const createCita = async (req, res) => {
     try {
-        const { codpaci, coddoc, fecha, hora, estado, motivo_cita } = req.body;
+        const { codpaci, coddoc, fecha, hora, motivo_cita } = req.body;
+        const io = req.app.get('io');
 
-        if (!codpaci || !coddoc || !fecha || !hora || !estado || !motivo_cita) {
+        if (!codpaci || !coddoc || !fecha || !hora || !motivo_cita) {
             return res.status(400).json({ message: "Todos los campos son obligatorios" });
         }
 
-        const sql = `INSERT INTO citas (codpaci, coddoc, fecha, hora, estado, motivo_cita) VALUES (?, ?, ?, ?, ?, ?)`;
-        db.query(sql, [codpaci, coddoc, fecha, hora, estado, motivo_cita], (err, result) => {
+        const sql = `INSERT INTO citas (codpaci, coddoc, fecha, hora, motivo_cita) VALUES (?, ?, ?, ?, ?)`;
+        db.query(sql, [codpaci, coddoc, fecha, hora, motivo_cita], (err, result) => {
             if (err) {
                 console.error("Error al insertar cita:", err);
                 return res.status(500).json({ message: "Error en el servidor" });
             }
-            res.status(201).json({ message: "Cita guardada exitosamente", id: result.insertId });
+
+            const citaId = result.insertId;
+
+            const titulo = "Cita Asignada";
+            const mensaje = `Tu cita fue registrada para el día ${fecha} a las ${hora}.`;
+
+            io.to(`paciente_${codpaci}`).emit("notificacion:nueva", {
+                titulo,
+                mensaje,
+            });
+
+            const insertNotiSql = `
+                INSERT INTO notificaciones (codpaci, titulo, mensaje)
+                VALUES (?, ?, ?)
+            `;
+            db.query(insertNotiSql, [codpaci, titulo, mensaje], (err2) => {
+                if (err2) {
+                    console.error("Error al guardar la notificación:", err2);
+                }
+            });
+
+            res.status(201).json({ message: "Cita guardada exitosamente", id: citaId });
         });
     } catch (error) {
+        console.error("Error general:", error);
         res.status(500).json({ message: "Error en el servidor" });
     }
 };
 
-const updateCita = (req, res) => {
-    const { id } = req.params;
-    const updates = req.body;
-    const sql = 'UPDATE citas SET ? WHERE id = ?';
 
-    db.query(sql, [updates, id], (err, result) => {
+const reagendarCita = (req, res) => {
+    const { id } = req.params;
+    const { fecha, hora, codpaci } = req.body;
+    const io = req.app.get('io');
+
+    const sql = `
+        UPDATE citas
+        SET fecha = ?, hora = ?
+        WHERE id = ?
+    `;
+
+    db.query(sql, [fecha, hora, id], (err, result) => {
         if (err) {
-            return res.status(500).json({ message: "Error en el servidor" });
+            return res.status(500).json({ message: "Error al reagendar la cita" });
         }
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Expediente no encontrado" });
+            return res.status(404).json({ message: "Cita no encontrada" });
         }
-        return res.json({ message: "Expediente actualizado" });
+
+        const titulo = "Cita reagendada";
+        const mensaje = `Tu cita fue cambiada para el ${fecha} a las ${hora}.`;
+
+        // Emitir notificación por socket
+        io.to(`paciente_${codpaci}`).emit("notificacion:nueva", {
+            titulo,
+            mensaje,
+        });
+
+        // Guardar la notificación en la base de datos
+        const insertSql = `
+            INSERT INTO notificaciones (codpaci, titulo, mensaje)
+            VALUES (?, ?, ?)
+        `;
+
+        db.query(insertSql, [codpaci, titulo, mensaje], (insertErr) => {
+            if (insertErr) {
+                console.error("Error al guardar la notificación:", insertErr);
+            }
+            return res.json({ message: "Cita reagendada correctamente" });
+        });
     });
 };
+
+
+const editarDatosCita = (req, res) => {
+    const { id } = req.params;
+    const { codpaci, coddoc, motivo_cita } = req.body;
+    const io = req.app.get('io');
+
+    const sql = `
+      UPDATE citas
+      SET codpaci=?, coddoc=?, motivo_cita=?
+      WHERE id = ?
+    `;
+
+    db.query(sql, [codpaci, coddoc, motivo_cita, id], (err, result) => {
+        if (err) return res.status(500).json({ message: "Error al editar la cita" });
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Cita no encontrada" });
+
+        const titulo = "Cita modificada";
+        const mensaje = "Tu cita fue actualizada por el personal médico.";
+
+        io.to(`paciente_${codpaci}`).emit("notificacion:nueva", {
+            titulo,
+            mensaje,
+        });
+
+        const insertSql = `
+            INSERT INTO notificaciones (codpaci, titulo, mensaje)
+            VALUES (?, ?, ?)
+        `;
+
+        db.query(insertSql, [codpaci, titulo, mensaje], (insertErr) => {
+            if (insertErr) {
+                console.error("Error al guardar la notificación:", insertErr);
+            }
+            return res.json({ message: "Cita actualizada correctamente" });
+        });
+    });
+};
+
+
+
 
 const deleteCita = async (req, res) => {
     const { id } = req.params;
@@ -237,4 +295,4 @@ const deleteAllCitasByDoctor = (req, res) => {
 
 
 
-module.exports = { getCitas, reservarCita, generarCitas, createCita, updateCita, deleteCita, deleteAllCitasByDoctor, getCitasById,cancelarCita };
+module.exports = { getCitas, generarCitas, createCita, reagendarCita, editarDatosCita, deleteCita, deleteAllCitasByDoctor, getCitasById, cancelarCita };

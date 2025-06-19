@@ -3,9 +3,11 @@ const router = express.Router();
 const db = require('../../config/db');
 
 const getExpediente = (req, res) => {
-    const sql = `SELECT em.*, p.nombre
-        FROM expediente_medico em
-        JOIN usuarios p ON em.codpaci = p.id`;
+    const sql = `SELECT em.*, p.nombre,
+      CONCAT(p.nombre, ' ', p.apellidoPaterno, ' ', p.apellidoMaterno) AS paciente
+      FROM expediente_medico em
+      JOIN usuarios p ON em.codpaci = p.id`;
+
     db.query(sql, (err, result) => {
         if (err) {
             return res.status(500).json({ message: "Error en el servidor" });
@@ -16,6 +18,7 @@ const getExpediente = (req, res) => {
         return res.json(result);
     });
 };
+
 
 const getExpedienteById = (req, res) => {
     const { id } = req.params;

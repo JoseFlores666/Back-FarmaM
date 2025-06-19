@@ -4,7 +4,10 @@ const db = require('../../config/db');
 
 const getUsuariosAll = (req, res) => {
     const sql = `
-        SELECT u.id, u.nombre, u.correo, s.intentos
+        SELECT u.id, u.nombre, u.correo,
+        u.apellidoPaterno,
+        CONCAT(u.nombre, ' ', u.apellidoPaterno, ' ', u.apellidoMaterno) AS nombreUsuario,
+        u.apellidoMaterno, s.intentos
         FROM usuarios u
         LEFT JOIN seguridad s ON u.id = s.user_id
     `;

@@ -3,17 +3,17 @@ const { createAudit } = require('./CrudAuditoria');
 
 const uploadLogo = async (req, res) => {
   try {
-    const { url, id_usuario } = req.body;
+    const { url, id_usuario,public_id } = req.body;
 
-    if (!id_usuario) {
+    if (!id_usuario||!public_id) {
       return res.status(400).json({ message: "El id_usuario es requerido" });
     }
 
     const oldData = JSON.stringify({ message: "N/A" });
     const updatedData = JSON.stringify({ url, isActive: false });
 
-    const query = "INSERT INTO logos (url, isActive) VALUES (?, ?)";
-    db.query(query, [url, false], (error, result) => {
+    const query = "INSERT INTO logos (url, isActive,public_id) VALUES (?, ?, ?)";
+    db.query(query, [url, false,public_id], (error, result) => {
       if (error) {
         console.error("Error en la inserción de logos:", error);
         return res.status(500).json({ message: "Error al subir el logo", error });

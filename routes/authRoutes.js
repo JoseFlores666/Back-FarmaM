@@ -10,24 +10,29 @@ const { getDeslindesLegales, createDeslindeLegal, updateDeslindeLegal, deleteDes
 const { getPoliticas, createPolitica, updatePolitica, deletePolitica, getCurrentPolitica } = require('../controllers/Doc-Regulatorio/CrudPoliticas');
 const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondiciones, deleteTerminosCondiciones, getCurrentTerminos } = require('../controllers/Doc-Regulatorio/CrudTerminosYC');
 const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/Perfil-Empresa/CrudEnlaces');
-const { createEslogan, getEslogan, deleteEslogan, updateEslogan } = require('../controllers/Perfil-Empresa/CrudEslogan');
 const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
 const { getEmpresa, updateEmpresa } = require('../controllers/Perfil-Empresa/CrudEmpresa');
-const { getContactInfo, upsertContactInfo, deleteContactInfo } = require('../controllers/Perfil-Empresa/CrudContact');
+const { getContactInfo, upsertContactInfo } = require('../controllers/Perfil-Empresa/CrudContact');
 const { createAudit, getAuditLogs } = require('../controllers/Perfil-Empresa/CrudAuditoria');
 const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../controllers/Monitor-Incidencias/CrudUsuariosBlock');
 const { getEspecialidades, crearEspecialidad, updateEspecialidad, deleteEspecialidad } = require('../controllers/Servicios/Especialidades')
 const { getDoc, createDoc, updateDoc, deleteDoc } = require('../controllers/Doctores/CrudDoc')
-const { getCitas, generarCitas, reservarCita, deleteAllCitasByDoctor, deleteCita, createCita, updateCita, getCitasById, cancelarCita } = require('../controllers/Citas/CrudCitas');
+const { getCitas, generarCitas, deleteAllCitasByDoctor, deleteCita, createCita, editarDatosCita,reagendarCita, getCitasById, cancelarCita } = require('../controllers/Citas/CrudCitas');
 const { getHorarios, createHorario, updateHorario, deleteHorario } = require('../controllers/Doctores/CRUDHorarios');
 const { createOpinion, updateOpinion, getOpinions, getOpinionById, deleteOpinion, updateReaction } = require('../controllers/CrudOpiniones/Opiniones');
 const { getExpediente, getExpedienteById, createExpediente, updateExpediente, deleteExpediente } = require('../controllers/Citas/ExpedienteM');
+const { reservarCita,agregarListaEspera,checkCitaPendiente, getListaEspera, reemplazarCita, deleteListaEspera, cancelarYEliminarCita } = require('../controllers/Citas/Reservaciones');
 const { getRecetas, getRecetasById, createRecetas, updateRecetas, deleteRecetas, getMedicamentos } = require('../controllers/Citas/RecetasMedicas');
 const { getActuExpe, deleteActuExpe } = require('../controllers/Citas/ActuaExpediente');
 const { loginDoc } = require('../controllers/Login/authLoginDoctor');
+const { getHorarioEmpresa, crearHorarioEmpresa, updateHorarioEmpresa, deleteHorarioEmpresa } = require('../controllers/Perfil-Empresa/HorarioEmpresa');
 const { getServicios, crearServicios, updateServicios, deleteServicios } = require('../controllers/Servicios/Servicios');
 const { getValores, updateValores, createValor, deleteValor } = require('../controllers/Servicios/Valores');
 const { getPerfilbyid, updateperfilbyid } = require('../controllers/Perfil-Empresa/PerfilUsuario');
+const { sendCorreo } = require('../controllers/Contactanos');
+const { getRecetasPorPaciente, crearReceta, actualizarReceta, eliminarReceta, getRecetaAll } = require('../controllers/CRUDRecetas/recetasMedicas');
+const { generarTokenWear, vincularWear, desvincularWear } = require('../controllers/wearos/wearOsAuth');
+const { getNotiById } = require('../controllers/Notifications/Notification');
 
 router.post('/login', login);
 router.get('/session', consultaSesion);
@@ -67,9 +72,17 @@ router.put('/updateDeslindeLegal/:id', updateDeslindeLegal);
 router.delete('/deleteDeslindeLegal/:id', deleteDeslindeLegal);
 router.get('/getCurrentDeslindes/', getCurrentDeslindes);
 
+//contacto por correo electronico
+router.post('/enviarMensaje', sendCorreo);
 
 
-//CrudEmpresa
+//CrudEmpresa horario
+router.get('/getHorarioEmpresa', getHorarioEmpresa);
+router.post('/crearHorarioEmpresa', crearHorarioEmpresa);
+router.put('/updateHorarioEmpresa/:id', updateHorarioEmpresa);
+router.delete('/deleteHorarioEmpresa/:id', deleteHorarioEmpresa);
+
+//Crud horario de la empresa
 router.get('/getEmpresa', getEmpresa);
 router.put('/updateEmpresa/:id', updateEmpresa);
 
@@ -95,7 +108,7 @@ router.put('/updateLogo/:id', updateLogo);
 router.post('/uploadLogo', uploadLogo);
 router.delete('/deleteLogo/:id', deleteLogo);
 
-//CrudServicios corregir el nombre
+//CrudServicios 
 router.get('/getEspecialidades', getEspecialidades);
 router.post('/createEspec', crearEspecialidad)
 router.put('/updateEspec/:codespe', updateEspecialidad);
@@ -131,12 +144,35 @@ router.post('/loginDoc', loginDoc);
 router.get('/getCitas', getCitas)
 router.get('/getCitasById/:coddoc', getCitasById)
 router.put('/cancelarCita', cancelarCita)
+
+//Crud reservaciones
 router.put('/reservarCita', reservarCita)
+router.get('/checkCitaPendiente', checkCitaPendiente)
+router.post('/agregarListaEspera', agregarListaEspera)
+router.get('/getListaEspera/:codcita', getListaEspera)
+
+router.put('/reemplazarCita/:codcita', reemplazarCita)
+router.delete('/deleteListaEspera/:id', deleteListaEspera)
+
+
+
 router.post('/generarCitas', generarCitas)
 router.post('/createCita', createCita)
-router.put('/updateCita/:id', updateCita)
+router.put('/editarDatosCita/:id', editarDatosCita);
+router.put('/reagendarCita/:id', reagendarCita);
 router.delete('/deleteCita/:id', deleteCita)
 router.delete('/deleteAllCitasByDoctor/:coddoc', deleteAllCitasByDoctor)
+router.delete('/cancelarYEliminarCita', cancelarYEliminarCita);
+
+//PARTE DEL WEAR OD
+router.post('/generar-token', generarTokenWear);
+router.post('/vincular', vincularWear);
+router.post('/desvincular', desvincularWear);
+
+//Notificaciones
+router.get('/getNotiById/:codpaci', getNotiById)
+
+
 
 //CrudHorario
 router.get('/getHorario', getHorarios)
@@ -160,7 +196,7 @@ router.post('/createExpediente', createExpediente)
 router.put('/updateExpediente/:id', updateExpediente);
 router.delete('/deleteExpediente/:id', deleteExpediente);
 
-//CrudRecetas aun no funciona
+//CrudRecetas aun no funciona y lo tengo duplicado
 router.get('/getRecetas', getRecetas)
 router.get('/getMedicamentos', getMedicamentos)
 router.get('/getRecetasById/:id', getRecetasById)
@@ -168,7 +204,12 @@ router.post('/createReceta', createRecetas)
 router.put('/updateReceta/:id', updateRecetas);
 router.delete('/deleteReceta/:id', deleteRecetas);
 
-//CrudRecetas aun no funciona
+router.get('/getRecetaAll', getRecetaAll);
+router.get('/getRecetasPorPaciente/:codpaci', getRecetasPorPaciente);
+router.post('/crearReceta', crearReceta);
+router.put('/actualizarReceta/:id', actualizarReceta);
+router.delete('/eliminarReceta/:id', eliminarReceta);
+//CrudActualizacion expediente aun no funciona
 router.get('/getActuExpe', getActuExpe)
 router.delete('/deleteActuExpe/:id', deleteActuExpe);
 

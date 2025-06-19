@@ -4,10 +4,13 @@ const db = require('../../config/db');
 
 const getRecetas = (req, res) => {
     const sql = `
-        SELECT em.*, p.nombre AS paciente, d.nomdoc AS doctor
-        FROM Recetas_medicas em
-        JOIN usuarios p ON em.codpaci = p.id
-        JOIN doctor d ON em.coddoc = d.coddoc
+      SELECT 
+      r.*,
+      CONCAT_WS(' ', p.nombre, p.apellidoPaterno, p.apellidoMaterno) AS paciente,
+      CONCAT_WS(' ', d.nomdoc, d.apepaternodoc, d.apematernodoc) AS doctor
+    FROM recetas_medicas r
+    INNER JOIN usuarios p ON r.codpaci = p.id
+    INNER JOIN doctor d ON r.coddoc = d.coddoc
     `;
 
     db.query(sql, (err, result) => {
