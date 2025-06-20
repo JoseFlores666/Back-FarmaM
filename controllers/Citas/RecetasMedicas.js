@@ -4,13 +4,14 @@ const db = require('../../config/db');
 
 const getRecetas = (req, res) => {
     const sql = `
-      SELECT 
-      r.*,
-      CONCAT_WS(' ', p.nombre, p.apellidoPaterno, p.apellidoMaterno) AS paciente,
-      CONCAT_WS(' ', d.nomdoc, d.apepaternodoc, d.apematernodoc) AS doctor
-    FROM recetas_medicas r
-    INNER JOIN usuarios p ON r.codpaci = p.id
-    INNER JOIN doctor d ON r.coddoc = d.coddoc
+    SELECT 
+  r.*,
+  CONCAT_WS(' ', p.nombre, p.apellidoPaterno, p.apellidoMaterno) AS paciente,
+  CONCAT_WS(' ', d.nomdoc, d.apepaternodoc, d.apematernodoc) AS doctor
+FROM recetas_medicas r
+LEFT JOIN usuarios p ON r.codpaci = p.id
+LEFT JOIN doctor d ON r.coddoc = d.coddoc;
+
     `;
 
     db.query(sql, (err, result) => {
@@ -24,72 +25,76 @@ const getRecetas = (req, res) => {
     });
 };
 
+const getRecetasByPacienteId = (req, res) => {
+    const { id } = req.params; 
 
-const getMedicamentos = (req, res) => {
-    const sql = `SELECT * FROM medicamentos_receta`;
-    db.query(sql, (err, result) => {
+    const sql = `
+      SELECT 
+        r.*,
+        CONCAT_WS(' ', p.nombre, p.apellidoPaterno, p.apellidoMaterno) AS paciente,
+        CONCAT_WS(' ', d.nomdoc, d.apepaternodoc, d.apematernodoc) AS doctor
+      FROM recetas_medicas r
+      INNER JOIN usuarios p ON r.codpaci = p.id
+      INNER JOIN doctor d ON r.coddoc = d.coddoc
+      WHERE r.codpaci = ?
+    `;
+
+    db.query(sql, [id], (err, result) => {
         if (err) {
             return res.status(500).json({ message: "Error en el servidor" });
         }
         if (!Array.isArray(result) || result.length === 0) {
-            return res.json([]);
+            return res.status(404).json({ message: "No se encontraron recetas para este paciente" });
         }
         return res.json(result);
     });
 };
 
+const createRecetas = async (req, res) => {
+  const {
+    historial_id,
+    coddoc,
+    codpaci,
+    medicamento,
+    fecha_inicio,
+    fecha_fin,
+    dosis,
+    instrucciones,
+    estado
+  } = req.body;
 
+  if (!coddoc || !codpaci || !medicamento || !fecha_inicio || !fecha_fin || !dosis || !instrucciones) {
+    return res.status(400).json({ message: "Todos los campos son obligatorios" });
+  }
 
-const getRecetasById = (req, res) => {
-    const { id } = req.params;
-    const sql = 'SELECT * FROM Recetas_medicas WHERE id = ?';
-    db.query(sql, [id], (err, result) => {
-        if (err) {
-            return res.status(500).json({ message: "Error en el servidor" });
-        }
-        if (result.length === 0) {
-            return res.status(404).json({ message: "Recetas no encontrado" });
-        }
-        return res.json(result[0]);
-    });
+  try {
+    const sql = `
+      INSERT INTO recetas_medicas 
+        (historial_id, coddoc, codpaci, medicamento, dosis, instrucciones, fecha_inicio, fecha_fin, estado) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const values = [
+      historial_id,
+      coddoc,
+      codpaci,
+      medicamento,
+      dosis,
+      instrucciones,
+      fecha_inicio,
+      fecha_fin,
+      estado
+    ];
+
+    await db.query(sql, values);
+
+    res.status(201).json({ message: "Receta creada correctamente" });
+
+  } catch (error) {
+    console.error("Error al crear receta:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
 };
 
-const createRecetas = (req, res) => {
-    const { historial_id, coddoc, codpaci, medicamentos, fecha_emision, fecha_vencimiento } = req.body;
-
-    console.log(req.body);
-
-    if (!coddoc || !codpaci || !medicamentos || medicamentos.length === 0 || !fecha_emision || !fecha_vencimiento) {
-        return res.status(400).json({ message: "Todos los campos son obligatorios y debe haber al menos un medicamento" });
-    }
-
-    const sqlReceta = `INSERT INTO recetas_medicas (historial_id, coddoc, codpaci, fecha_emision, fecha_vencimiento) 
-                        VALUES (?, ?, ?, ?, ?)`;
-
-    const valuesReceta = [historial_id, coddoc, codpaci, fecha_emision, fecha_vencimiento];
-
-    db.query(sqlReceta, valuesReceta, (err, result) => {
-        if (err) {
-            console.error("Error al insertar la receta:", err);
-            return res.status(500).json({ message: "Error en el servidor" });
-        }
-
-        const recetaId = result.insertId;
-
-        const sqlMedicamentos = `INSERT INTO medicamentos_receta (receta_id, medicamento, dosis, instrucciones) VALUES ?`;
-
-        const valuesMedicamentos = medicamentos.map(med => [recetaId, med.medicamento, med.dosis, med.instrucciones]);
-
-        db.query(sqlMedicamentos, [valuesMedicamentos], (err) => {
-            if (err) {
-                console.error("Error al insertar medicamentos:", err);
-                return res.status(500).json({ message: "Error al guardar los medicamentos" });
-            }
-
-            return res.status(201).json({ message: "Receta creada correctamente", recetaId });
-        });
-    });
-};
 
 const updateRecetas = (req, res) => {
     const { id } = req.params;
@@ -109,7 +114,7 @@ const updateRecetas = (req, res) => {
 
 const deleteRecetas = (req, res) => {
     const { id } = req.params;
-    const sql = 'DELETE FROM Recetas_medicas WHERE id = ?';
+    const sql = 'DELETE FROM recetas_medicas WHERE id = ?';
 
     db.query(sql, [id], (err, result) => {
         if (err) {
@@ -123,4 +128,4 @@ const deleteRecetas = (req, res) => {
 };
 
 
-module.exports = { getRecetas, getRecetasById, createRecetas, updateRecetas, deleteRecetas, getMedicamentos }
+module.exports = { getRecetas, createRecetas, updateRecetas, deleteRecetas, getRecetasByPacienteId }

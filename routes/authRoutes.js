@@ -22,7 +22,7 @@ const { getHorarios, createHorario, updateHorario, deleteHorario } = require('..
 const { createOpinion, updateOpinion, getOpinions, getOpinionById, deleteOpinion, updateReaction } = require('../controllers/CrudOpiniones/Opiniones');
 const { getExpediente, getExpedienteById, createExpediente, updateExpediente, deleteExpediente } = require('../controllers/Citas/ExpedienteM');
 const { reservarCita,agregarListaEspera,checkCitaPendiente, getListaEspera, reemplazarCita, deleteListaEspera, cancelarYEliminarCita } = require('../controllers/Citas/Reservaciones');
-const { getRecetas, getRecetasById, createRecetas, updateRecetas, deleteRecetas, getMedicamentos } = require('../controllers/Citas/RecetasMedicas');
+const { getRecetas, createRecetas, updateRecetas, deleteRecetas, getRecetasByPacienteId } = require('../controllers/Citas/RecetasMedicas');
 const { getActuExpe, deleteActuExpe } = require('../controllers/Citas/ActuaExpediente');
 const { loginDoc } = require('../controllers/Login/authLoginDoctor');
 const { getHorarioEmpresa, crearHorarioEmpresa, updateHorarioEmpresa, deleteHorarioEmpresa } = require('../controllers/Perfil-Empresa/HorarioEmpresa');
@@ -30,7 +30,6 @@ const { getServicios, crearServicios, updateServicios, deleteServicios } = requi
 const { getValores, updateValores, createValor, deleteValor } = require('../controllers/Servicios/Valores');
 const { getPerfilbyid, updateperfilbyid } = require('../controllers/Perfil-Empresa/PerfilUsuario');
 const { sendCorreo } = require('../controllers/Contactanos');
-const { getRecetasPorPaciente, crearReceta, actualizarReceta, eliminarReceta, getRecetaAll } = require('../controllers/CRUDRecetas/recetasMedicas');
 const { generarTokenWear, vincularWear, desvincularWear } = require('../controllers/wearos/wearOsAuth');
 const { getNotiById } = require('../controllers/Notifications/Notification');
 
@@ -197,18 +196,12 @@ router.put('/updateExpediente/:id', updateExpediente);
 router.delete('/deleteExpediente/:id', deleteExpediente);
 
 //CrudRecetas aun no funciona y lo tengo duplicado
-router.get('/getRecetas', getRecetas)
-router.get('/getMedicamentos', getMedicamentos)
-router.get('/getRecetasById/:id', getRecetasById)
 router.post('/createReceta', createRecetas)
 router.put('/updateReceta/:id', updateRecetas);
 router.delete('/deleteReceta/:id', deleteRecetas);
+router.get('/getRecetasByPacienteId/:id', getRecetasByPacienteId);
+router.get('/getRecetas', getRecetas);
 
-router.get('/getRecetaAll', getRecetaAll);
-router.get('/getRecetasPorPaciente/:codpaci', getRecetasPorPaciente);
-router.post('/crearReceta', crearReceta);
-router.put('/actualizarReceta/:id', actualizarReceta);
-router.delete('/eliminarReceta/:id', eliminarReceta);
 //CrudActualizacion expediente aun no funciona
 router.get('/getActuExpe', getActuExpe)
 router.delete('/deleteActuExpe/:id', deleteActuExpe);
