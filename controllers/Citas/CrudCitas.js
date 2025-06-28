@@ -118,13 +118,18 @@ const generarCitas = async (req, res) => {
 
     res.json({ message: 'Citas generadas correctamente y horario actualizado a Activo' });
 };
+
 const createCita = async (req, res) => {
     try {
-        const { codpaci, coddoc, fecha, hora, motivo_cita } = req.body;
+        const { codpaci, coddoc, fecha, hora, motivo_cita, servicios } = req.body;
         const io = req.app.get('io');
 
         if (!codpaci || !coddoc || !fecha || !hora || !motivo_cita) {
             return res.status(400).json({ message: "Todos los campos son obligatorios" });
+        }
+
+        if (!Array.isArray(servicios) || servicios.length === 0 || servicios.length > 2) {
+            return res.status(400).json({ message: "Debes seleccionar entre 1 y 2 servicios" });
         }
 
         const sql = `INSERT INTO citas (codpaci, coddoc, fecha, hora, motivo_cita) VALUES (?, ?, ?, ?, ?)`;
@@ -136,31 +141,38 @@ const createCita = async (req, res) => {
 
             const citaId = result.insertId;
 
-            const titulo = "Cita Asignada";
-            const mensaje = `Tu cita fue registrada para el día ${fecha} a las ${hora}.`;
+            // Insertar servicios relacionados
+            const insertServiciosSql = `INSERT INTO cita_servicio (cita_id, servicio_id) VALUES ?`;
+            const values = servicios.map(servId => [citaId, servId]);
 
-            io.to(`paciente_${codpaci}`).emit("notificacion:nueva", {
-                titulo,
-                mensaje,
-            });
-
-            const insertNotiSql = `
-                INSERT INTO notificaciones (codpaci, titulo, mensaje)
-                VALUES (?, ?, ?)
-            `;
-            db.query(insertNotiSql, [codpaci, titulo, mensaje], (err2) => {
+            db.query(insertServiciosSql, [values], (err2) => {
                 if (err2) {
-                    console.error("Error al guardar la notificación:", err2);
+                    console.error("Error al insertar servicios de cita:", err2);
+                    return res.status(500).json({ message: "Error al guardar los servicios" });
                 }
-            });
 
-            res.status(201).json({ message: "Cita guardada exitosamente", id: citaId });
+                // Notificación por socket y base de datos
+                const titulo = "Cita Asignada";
+                const mensaje = `Tu cita fue registrada para el día ${fecha} a las ${hora}.`;
+
+                io.to(`paciente_${codpaci}`).emit("notificacion:nueva", { titulo, mensaje });
+
+                const insertNotiSql = `INSERT INTO notificaciones (codpaci, titulo, mensaje) VALUES (?, ?, ?)`;
+                db.query(insertNotiSql, [codpaci, titulo, mensaje], (err3) => {
+                    if (err3) {
+                        console.error("Error al guardar la notificación:", err3);
+                    }
+                });
+
+                res.status(201).json({ message: "Cita y servicios guardados exitosamente", id: citaId });
+            });
         });
     } catch (error) {
         console.error("Error general:", error);
         res.status(500).json({ message: "Error en el servidor" });
     }
 };
+
 
 
 const reagendarCita = (req, res) => {
@@ -206,11 +218,14 @@ const reagendarCita = (req, res) => {
     });
 };
 
-
 const editarDatosCita = (req, res) => {
     const { id } = req.params;
-    const { codpaci, coddoc, motivo_cita } = req.body;
+    const { codpaci, coddoc, motivo_cita, servicios } = req.body;
     const io = req.app.get('io');
+
+    if (!Array.isArray(servicios) || servicios.length === 0 || servicios.length > 2) {
+        return res.status(400).json({ message: "Debes seleccionar entre 1 y 2 servicios" });
+    }
 
     const sql = `
       UPDATE citas
@@ -222,28 +237,39 @@ const editarDatosCita = (req, res) => {
         if (err) return res.status(500).json({ message: "Error al editar la cita" });
         if (result.affectedRows === 0) return res.status(404).json({ message: "Cita no encontrada" });
 
-        const titulo = "Cita modificada";
-        const mensaje = "Tu cita fue actualizada por el personal médico.";
-
-        io.to(`paciente_${codpaci}`).emit("notificacion:nueva", {
-            titulo,
-            mensaje,
-        });
-
-        const insertSql = `
-            INSERT INTO notificaciones (codpaci, titulo, mensaje)
-            VALUES (?, ?, ?)
-        `;
-
-        db.query(insertSql, [codpaci, titulo, mensaje], (insertErr) => {
-            if (insertErr) {
-                console.error("Error al guardar la notificación:", insertErr);
+        // Borrar servicios anteriores
+        const deleteSql = `DELETE FROM cita_servicio WHERE cita_id = ?`;
+        db.query(deleteSql, [id], (delErr) => {
+            if (delErr) {
+                console.error("Error al borrar servicios anteriores:", delErr);
+                return res.status(500).json({ message: "Error al actualizar los servicios" });
             }
-            return res.json({ message: "Cita actualizada correctamente" });
+
+            // Insertar nuevos servicios
+            const insertSql = `INSERT INTO cita_servicio (cita_id, servicio_id) VALUES ?`;
+            const values = servicios.map(sid => [id, sid]);
+
+            db.query(insertSql, [values], (insertErr) => {
+                if (insertErr) {
+                    console.error("Error al insertar nuevos servicios:", insertErr);
+                    return res.status(500).json({ message: "Error al guardar los servicios" });
+                }
+
+                // Notificación
+                const titulo = "Cita modificada";
+                const mensaje = "Tu cita fue actualizada por el personal médico.";
+
+                io.to(`paciente_${codpaci}`).emit("notificacion:nueva", { titulo, mensaje });
+
+                const insertNoti = `INSERT INTO notificaciones (codpaci, titulo, mensaje) VALUES (?, ?, ?)`;
+                db.query(insertNoti, [codpaci, titulo, mensaje], (err3) => {
+                    if (err3) console.error("Error al guardar la notificación:", err3);
+                    return res.json({ message: "Cita y servicios actualizados correctamente" });
+                });
+            });
         });
     });
 };
-
 
 
 

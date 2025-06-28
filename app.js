@@ -66,7 +66,7 @@ const sessionStore = new MySQLStore({
 
 //true = https y si es false = http
 //al desplegar el backend a render tiene que estar en false
-const useHttps = false;
+const useHttps = true;
 
 app.use(
     session({

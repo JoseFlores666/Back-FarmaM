@@ -6,7 +6,7 @@ const path = require('path');
 const { Server } = require('socket.io');
 const sockets=require('./sockets')
 
-const USE_HTTPS = false;
+const USE_HTTPS = true;
 
 let server;
 if (USE_HTTPS) {
@@ -19,7 +19,6 @@ if (USE_HTTPS) {
     server = http.createServer(app);
 }
 
-// 🔌 Integración con Socket.IO
 const io = new Server(server, {
     cors: {
         origin: [

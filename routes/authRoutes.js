@@ -11,12 +11,12 @@ const { getPoliticas, createPolitica, updatePolitica, deletePolitica, getCurrent
 const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondiciones, deleteTerminosCondiciones, getCurrentTerminos } = require('../controllers/Doc-Regulatorio/CrudTerminosYC');
 const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/Perfil-Empresa/CrudEnlaces');
 const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
-const { getEmpresa, updateEmpresa } = require('../controllers/Perfil-Empresa/CrudEmpresa');
+const { getEmpresa, updateEmpresa, getEmpresaChat } = require('../controllers/Perfil-Empresa/CrudEmpresa');
 const { getContactInfo, upsertContactInfo } = require('../controllers/Perfil-Empresa/CrudContact');
 const { createAudit, getAuditLogs } = require('../controllers/Perfil-Empresa/CrudAuditoria');
 const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../controllers/Monitor-Incidencias/CrudUsuariosBlock');
 const { getEspecialidades, crearEspecialidad, updateEspecialidad, deleteEspecialidad } = require('../controllers/Servicios/Especialidades')
-const { getDoc, createDoc, updateDoc, deleteDoc } = require('../controllers/Doctores/CrudDoc')
+const { getDoc, createDoc, updateDoc, deleteDoc, upsertCostosDoctor } = require('../controllers/Doctores/CrudDoc')
 const { getCitas, generarCitas, deleteAllCitasByDoctor, deleteCita, createCita, editarDatosCita,reagendarCita, getCitasById, cancelarCita } = require('../controllers/Citas/CrudCitas');
 const { getHorarios, createHorario, updateHorario, deleteHorario } = require('../controllers/Doctores/CRUDHorarios');
 const { createOpinion, updateOpinion, getOpinions, getOpinionById, deleteOpinion, updateReaction } = require('../controllers/CrudOpiniones/Opiniones');
@@ -26,7 +26,7 @@ const { getRecetas, createRecetas, updateRecetas, deleteRecetas, getRecetasByPac
 const { getActuExpe, deleteActuExpe } = require('../controllers/Citas/ActuaExpediente');
 const { loginDoc } = require('../controllers/Login/authLoginDoctor');
 const { getHorarioEmpresa, crearHorarioEmpresa, updateHorarioEmpresa, deleteHorarioEmpresa } = require('../controllers/Perfil-Empresa/HorarioEmpresa');
-const { getServicios, crearServicios, updateServicios, deleteServicios } = require('../controllers/Servicios/Servicios');
+const { getServicios, crearServicios, updateServicios, deleteServicios, asignarServiciosDoctor, getServiciosConDoctores, getServiciosAsignadosCount, getServiciosDelDoctor } = require('../controllers/Servicios/Servicios');
 const { getValores, updateValores, createValor, deleteValor } = require('../controllers/Servicios/Valores');
 const { getPerfilbyid, updateperfilbyid } = require('../controllers/Perfil-Empresa/PerfilUsuario');
 const { sendCorreo } = require('../controllers/Contactanos');
@@ -94,6 +94,10 @@ router.get('/getServicios', getServicios);
 router.put('/updateServicios/:id', updateServicios);
 router.post('/crearServicios', crearServicios);
 router.delete('/deleteServicios/:id', deleteServicios);
+router.post('/asignarServiciosDoctor/:coddoc', asignarServiciosDoctor);
+router.get('/getServiciosAsignadosCount/:coddoc', getServiciosAsignadosCount);
+router.get('/getServiciosDelDoctor/:coddoc', getServiciosDelDoctor);
+
 //CRUD enlaces
 router.get('/getEnlaces', getEnlaces);
 router.post('/createEnlace', createEnlace);
@@ -107,7 +111,7 @@ router.put('/updateLogo/:id', updateLogo);
 router.post('/uploadLogo', uploadLogo);
 router.delete('/deleteLogo/:id', deleteLogo);
 
-//CrudServicios 
+//CrudEspecialidad
 router.get('/getEspecialidades', getEspecialidades);
 router.post('/createEspec', crearEspecialidad)
 router.put('/updateEspec/:codespe', updateEspecialidad);
@@ -115,8 +119,9 @@ router.delete('/deleteEspec/:codespe', deleteEspecialidad);
 
 //CrudEmpresa
 router.get('/getEmpresa', getEmpresa)
+router.get('/getEmpresaChat', getEmpresaChat)
 router.put('/updateEmpresa/:id', updateEmpresa)
-
+getEmpresaChat
 //CrudValores
 router.get('/getValores', getValores)
 router.post('/createValor', createValor)
@@ -138,6 +143,8 @@ router.post('/createDoc', createDoc)
 router.delete('/deleteDoc/:id', deleteDoc)
 router.put('/updateDoc/:id', updateDoc);
 router.post('/loginDoc', loginDoc);
+router.post('/upsertCostosDoctor', upsertCostosDoctor);
+
 
 //CrudCitas
 router.get('/getCitas', getCitas)

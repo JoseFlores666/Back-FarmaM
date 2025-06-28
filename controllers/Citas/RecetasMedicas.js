@@ -26,6 +26,7 @@ LEFT JOIN doctor d ON r.coddoc = d.coddoc;
 };
 
 const getRecetasByPacienteId = (req, res) => {
+  console.log("una consulta")
     const { id } = req.params; 
 
     const sql = `

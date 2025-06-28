@@ -123,12 +123,17 @@ const deleteListaEspera = async (req, res) => {
         console.error('Error en el servidor:', error);
         res.status(500).json({ error: 'Error en el servidor' });
     }
-};const reservarCita = (req, res) => {
-    const { id, codpaci, motivoCita } = req.body;
-    const io = req.app.get('io'); 
+};
+const reservarCita = (req, res) => {
+    const { id, codpaci, motivoCita, servicios } = req.body;
+    const io = req.app.get('io');
 
     if (!id || !codpaci || !motivoCita) {
         return res.status(400).json({ message: 'Faltan datos requeridos' });
+    }
+
+    if (!Array.isArray(servicios) || servicios.length === 0 || servicios.length > 2) {
+        return res.status(400).json({ message: "Debes seleccionar entre 1 y 2 servicios" });
     }
 
     const sqlSelect = `SELECT * FROM citas WHERE id = ? AND estado = 'Disponible'`;
@@ -168,20 +173,32 @@ const deleteListaEspera = async (req, res) => {
                 return res.status(409).json({ message: 'La cita ya fue reservada por otro paciente.' });
             }
 
-            const titulo = "Cita reservada";
-            const mensaje = "Tu cita ha sido reservada con éxito.";
+            // Insertar servicios
+            const insertSql = `INSERT INTO cita_servicio (cita_id, servicio_id) VALUES ?`;
+            const values = servicios.map(sid => [id, sid]);
 
-            io.to(`paciente_${codpaci}`).emit("notificacion:nueva", { titulo, mensaje });
+            db.query(insertSql, [values], (insertErr) => {
+                if (insertErr) {
+                    console.error("Error al guardar los servicios:", insertErr);
+                    return res.status(500).json({ message: "Cita reservada, pero ocurrió un error al guardar los servicios" });
+                }
 
-            const insertSql = `INSERT INTO notificaciones (codpaci, titulo, mensaje) VALUES (?, ?, ?)`;
-            db.query(insertSql, [codpaci, titulo, mensaje], (err) => {
-                if (err) console.error('Error al insertar notificación:', err);
+                const titulo = "Cita reservada";
+                const mensaje = "Tu cita ha sido reservada con éxito.";
+
+                io.to(`paciente_${codpaci}`).emit("notificacion:nueva", { titulo, mensaje });
+
+                const insertNoti = `INSERT INTO notificaciones (codpaci, titulo, mensaje) VALUES (?, ?, ?)`;
+                db.query(insertNoti, [codpaci, titulo, mensaje], (err) => {
+                    if (err) console.error('Error al insertar notificación:', err);
+                });
+
+                return res.json({ message: 'Cita y servicios reservados correctamente' });
             });
-
-            return res.json({ message: 'Cita reservada correctamente' });
         });
     });
 };
+
 
 
 const agregarListaEspera = (req, res) => {
@@ -337,6 +354,27 @@ const cancelarYEliminarCita = (req, res) => {
     });
   });
 };
+
+const getServiciosDeCita = (req, res) => {
+  const { codcita } = req.params;
+
+  const sql = `
+    SELECT s.id, s.nombre, s.descripcion
+    FROM cita_servicio cs
+    INNER JOIN servicios s ON s.id = cs.servicio_id
+    WHERE cs.cita_id = ?
+  `;
+
+  db.query(sql, [codcita], (err, result) => {
+    if (err) {
+      console.error("Error al obtener servicios de la cita:", err);
+      return res.status(500).json({ message: "Error en el servidor" });
+    }
+
+    return res.json(result);
+  });
+};
+
 
 
 module.exports = { reservarCita,agregarListaEspera,checkCitaPendiente,getListaEspera,reemplazarCita,deleteListaEspera,cancelarYEliminarCita };
