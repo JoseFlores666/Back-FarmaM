@@ -233,7 +233,6 @@ router.get('/alexa/valores', obtValores);
 router.get('/alexa/enlaces', obtEnlaces);
 router.get('/alexa/contacto', obtContacto);
 router.get('/alexa/logos', obtLogos);
-router.get('/alexa/info-completa', obtNombreEmpresa);
 router.get('/alexa/nombre', obtNombreEmpresa);
 router.get('/alexa/nosotros', obtNosotros);
 router.get('/alexa/mision', obtMision);

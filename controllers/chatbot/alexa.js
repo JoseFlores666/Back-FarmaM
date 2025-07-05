@@ -95,7 +95,7 @@ const getEmpresaChat = async (req, res) => {
 };
 
 const obtPoliticas = (req, res) => {
-  const sql = "SELECT * FROM politicas WHERE estado = 1 AND vigencia = 1 ORDER BY fecha_vigencia DESC LIMIT 1";
+  const sql = "SELECT * FROM politicas WHERE estado = 'en proceso' AND vigencia = 'Vigente' LIMIT 1";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ message: "Error en el servidor" });
     res.json(result[0]);
@@ -103,7 +103,7 @@ const obtPoliticas = (req, res) => {
 };
 
 const obtDeslinde = (req, res) => {
-  const sql = "SELECT * FROM deslinde_legal WHERE estado = 1 AND vigencia = 1 ORDER BY fecha_vigencia DESC LIMIT 1";
+  const sql = "SELECT * FROM deslinde_legal WHERE estado = 'en proceso' AND vigencia = 'Vigente' LIMIT 1";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ message: "Error en el servidor" });
     res.json(result[0]);
@@ -111,7 +111,7 @@ const obtDeslinde = (req, res) => {
 };
 
 const obtAviso = (req, res) => {
-  const sql = "SELECT * FROM avisopriv WHERE estado = 1 AND vigencia = 1 ORDER BY fecha_vigencia DESC LIMIT 1";
+  const sql = "SELECT * FROM avisopriv WHERE estado = 'en proceso' AND vigencia = 'Vigente' LIMIT 1";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ message: "Error en el servidor" });
     res.json(result[0]);
@@ -119,7 +119,7 @@ const obtAviso = (req, res) => {
 };
 
 const obtTerminos = (req, res) => {
-  const sql = "SELECT * FROM terminos_condiciones WHERE estado = 1 AND vigencia = 1 ORDER BY fecha_vigencia DESC LIMIT 1";
+  const sql = "SELECT * FROM terminos_condiciones WHERE estado = 'en proceso' AND vigencia = 'Vigente' LIMIT 1";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ message: "Error en el servidor" });
     res.json(result[0]);
