@@ -6,7 +6,7 @@ const path = require('path');
 const { Server } = require('socket.io');
 const sockets=require('./sockets')
 
-const USE_HTTPS = true;
+const USE_HTTPS = process.env.USE_HTTPS === 'true';
 
 let server;
 if (USE_HTTPS) {

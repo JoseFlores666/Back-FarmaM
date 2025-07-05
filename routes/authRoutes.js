@@ -11,18 +11,19 @@ const { getPoliticas, createPolitica, updatePolitica, deletePolitica, getCurrent
 const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondiciones, deleteTerminosCondiciones, getCurrentTerminos } = require('../controllers/Doc-Regulatorio/CrudTerminosYC');
 const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/Perfil-Empresa/CrudEnlaces');
 const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
-const { getEmpresa, updateEmpresa, getEmpresaChat } = require('../controllers/Perfil-Empresa/CrudEmpresa');
+const { getEmpresa, updateEmpresa } = require('../controllers/Perfil-Empresa/CrudEmpresa');
+const { getEmpresaChat, obtAviso, obtContacto, obtDeslinde, obtEnlaces, obtEslogan, obtHorario, obtInfoEmpresaCompleta, obtLogos, obtMision, obtNombreEmpresa, obtNosotros, obtPoliticas, obtServicios, obtTerminos, obtValores, obtVision } =require('../controllers/chatbot/alexa');
 const { getContactInfo, upsertContactInfo } = require('../controllers/Perfil-Empresa/CrudContact');
 const { createAudit, getAuditLogs } = require('../controllers/Perfil-Empresa/CrudAuditoria');
 const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../controllers/Monitor-Incidencias/CrudUsuariosBlock');
 const { getEspecialidades, crearEspecialidad, updateEspecialidad, deleteEspecialidad } = require('../controllers/Servicios/Especialidades')
 const { getDoc, createDoc, updateDoc, deleteDoc, upsertCostosDoctor } = require('../controllers/Doctores/CrudDoc')
-const { getCitas, generarCitas, deleteAllCitasByDoctor, deleteCita, createCita, editarDatosCita,reagendarCita, getCitasById, cancelarCita } = require('../controllers/Citas/CrudCitas');
+const { getCitas, generarCitas, deleteAllCitasByDoctor, deleteCita, createCita, editarDatosCita, reagendarCita, getCitasById, cancelarCita } = require('../controllers/Citas/CrudCitas');
 const { getHorarios, createHorario, updateHorario, deleteHorario } = require('../controllers/Doctores/CRUDHorarios');
 const { createOpinion, updateOpinion, getOpinions, getOpinionById, deleteOpinion, updateReaction } = require('../controllers/CrudOpiniones/Opiniones');
 const { getExpediente, getExpedienteById, createExpediente, updateExpediente, deleteExpediente } = require('../controllers/Citas/ExpedienteM');
-const { reservarCita,agregarListaEspera,checkCitaPendiente, getListaEspera, reemplazarCita, deleteListaEspera, cancelarYEliminarCita } = require('../controllers/Citas/Reservaciones');
-const { getRecetas, createRecetas, updateRecetas, deleteRecetas, getRecetasByPacienteId } = require('../controllers/Citas/RecetasMedicas');
+const { reservarCita, agregarListaEspera, checkCitaPendiente, getListaEspera, reemplazarCita, deleteListaEspera, cancelarYEliminarCita, getServiciosDeCita } = require('../controllers/Citas/Reservaciones');
+const { getRecetas, createRecetas, updateRecetas, deleteRecetas, getRecetasByPacienteId, getMedicamentosByReceta } = require('../controllers/Citas/RecetasMedicas');
 const { getActuExpe, deleteActuExpe } = require('../controllers/Citas/ActuaExpediente');
 const { loginDoc } = require('../controllers/Login/authLoginDoctor');
 const { getHorarioEmpresa, crearHorarioEmpresa, updateHorarioEmpresa, deleteHorarioEmpresa } = require('../controllers/Perfil-Empresa/HorarioEmpresa');
@@ -32,6 +33,7 @@ const { getPerfilbyid, updateperfilbyid } = require('../controllers/Perfil-Empre
 const { sendCorreo } = require('../controllers/Contactanos');
 const { generarTokenWear, vincularWear, desvincularWear } = require('../controllers/wearos/wearOsAuth');
 const { getNotiById } = require('../controllers/Notifications/Notification');
+const { getAvisosPriv, createAvisoPriv, updateAvisoPriv, deleteAvisoPriv, getCurrentAvisosPriv } = require('../controllers/Doc-Regulatorio/CRUDAvisoPriv')
 
 router.post('/login', login);
 router.get('/session', consultaSesion);
@@ -70,6 +72,13 @@ router.post('/createDeslindeLegal', createDeslindeLegal);
 router.put('/updateDeslindeLegal/:id', updateDeslindeLegal);
 router.delete('/deleteDeslindeLegal/:id', deleteDeslindeLegal);
 router.get('/getCurrentDeslindes/', getCurrentDeslindes);
+
+// CRUD Aviso de Privacidad
+router.get('/getAvisosPriv', getAvisosPriv);
+router.post('/createAvisoPriv', createAvisoPriv);
+router.put('/updateAvisoPriv/:id', updateAvisoPriv);
+router.delete('/deleteAvisoPriv/:id', deleteAvisoPriv);
+router.get('/getCurrentAvisosPriv', getCurrentAvisosPriv);
 
 //contacto por correo electronico
 router.post('/enviarMensaje', sendCorreo);
@@ -121,12 +130,12 @@ router.delete('/deleteEspec/:codespe', deleteEspecialidad);
 router.get('/getEmpresa', getEmpresa)
 router.get('/getEmpresaChat', getEmpresaChat)
 router.put('/updateEmpresa/:id', updateEmpresa)
-getEmpresaChat
+
 //CrudValores
 router.get('/getValores', getValores)
 router.post('/createValor', createValor)
-router.put('/updateValores/:id',updateValores),
-router.delete('/deleteValor/:id',deleteValor)
+router.put('/updateValores/:id', updateValores),
+    router.delete('/deleteValor/:id', deleteValor)
 
 
 //CrudAuditoria 
@@ -178,8 +187,6 @@ router.post('/desvincular', desvincularWear);
 //Notificaciones
 router.get('/getNotiById/:codpaci', getNotiById)
 
-
-
 //CrudHorario
 router.get('/getHorario', getHorarios)
 router.post('/createHorario', createHorario)
@@ -204,15 +211,34 @@ router.delete('/deleteExpediente/:id', deleteExpediente);
 
 //CrudRecetas aun no funciona y lo tengo duplicado
 router.post('/createReceta', createRecetas)
+router.get('/getMedicamentosByReceta/:recetaId', getMedicamentosByReceta)
 router.put('/updateReceta/:id', updateRecetas);
 router.delete('/deleteReceta/:id', deleteRecetas);
 router.get('/getRecetasByPacienteId/:id', getRecetasByPacienteId);
 router.get('/getRecetas', getRecetas);
+router.get('/getServiciosDeCita/:codcita', getServiciosDeCita);
 
 //CrudActualizacion expediente aun no funciona
 router.get('/getActuExpe', getActuExpe)
 router.delete('/deleteActuExpe/:id', deleteActuExpe);
 
-
+//Chat Alexa devloper console
+router.get('/alexa/politicas', obtPoliticas);
+router.get('/alexa/deslinde', obtDeslinde);
+router.get('/alexa/aviso-privacidad', obtAviso);
+router.get('/alexa/terminos', obtTerminos);
+router.get('/alexa/servicios', obtServicios);
+router.get('/alexa/horario', obtHorario);
+router.get('/alexa/valores', obtValores);
+router.get('/alexa/enlaces', obtEnlaces);
+router.get('/alexa/contacto', obtContacto);
+router.get('/alexa/logos', obtLogos);
+router.get('/alexa/info-completa', obtNombreEmpresa);
+router.get('/alexa/nombre', obtNombreEmpresa);
+router.get('/alexa/nosotros', obtNosotros);
+router.get('/alexa/mision', obtMision);
+router.get('/alexa/vision', obtVision);
+router.get('/alexa/eslogan',obtEslogan);
+router.get('/alexa/info-completa', obtInfoEmpresaCompleta);
 
 module.exports = router;
