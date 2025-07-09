@@ -222,6 +222,21 @@ const obtInfoEmpresaCompleta = (req, res) => {
   });
 };
 
+const obtenerDoctoresConEspecialidad = (req, res) => {
+  const sql = `
+    SELECT 
+      CONCAT(d.nomdoc, ' ', d.apepaternodoc, ' ', d.apematernodoc) AS nombre_completo,
+      e.titulo AS especialidad
+    FROM doctor d
+    JOIN especialidad e ON d.codespe = e.codespe
+  `;
+
+  db.query(sql, (err, result) => {
+    if (err) return res.status(500).json({ message: "Error en el servidor" });
+    res.json(result);
+  });
+};
+
 module.exports = {
   obtPoliticas,
   obtDeslinde,
@@ -239,5 +254,6 @@ module.exports = {
   obtMision,
   obtVision,
   obtEslogan,
-  obtInfoEmpresaCompleta
+  obtInfoEmpresaCompleta,
+  obtenerDoctoresConEspecialidad
 };

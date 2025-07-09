@@ -26,7 +26,7 @@ const createOpinion = async (req, res) => {
 const getOpinions = async (req, res) => {
     try {
         const sql = `
-        SELECT o.*, u.nombre AS usuario_nombre, u.foto_perfil,
+        SELECT o.*, u.nombre AS usuario_nombre, u.foto_perfil,u.usuario,rol_id,
       CONCAT(u.nombre, ' ', u.apellidoPaterno, ' ', u.apellidoMaterno) AS paciente
 
         FROM opiniones o

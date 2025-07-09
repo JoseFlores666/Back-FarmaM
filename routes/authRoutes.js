@@ -12,7 +12,7 @@ const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondici
 const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/Perfil-Empresa/CrudEnlaces');
 const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
 const { getEmpresa, updateEmpresa } = require('../controllers/Perfil-Empresa/CrudEmpresa');
-const { getEmpresaChat, obtAviso, obtContacto, obtDeslinde, obtEnlaces, obtEslogan, obtHorario, obtInfoEmpresaCompleta, obtLogos, obtMision, obtNombreEmpresa, obtNosotros, obtPoliticas, obtServicios, obtTerminos, obtValores, obtVision } =require('../controllers/chatbot/alexa');
+const { getEmpresaChat, obtAviso, obtContacto, obtDeslinde, obtEnlaces, obtEslogan, obtHorario, obtInfoEmpresaCompleta, obtLogos, obtMision, obtNombreEmpresa, obtNosotros, obtPoliticas, obtServicios, obtTerminos, obtValores, obtVision, obtenerDoctoresConEspecialidad } =require('../controllers/chatbot/alexa');
 const { getContactInfo, upsertContactInfo } = require('../controllers/Perfil-Empresa/CrudContact');
 const { createAudit, getAuditLogs } = require('../controllers/Perfil-Empresa/CrudAuditoria');
 const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../controllers/Monitor-Incidencias/CrudUsuariosBlock');
@@ -225,19 +225,26 @@ router.delete('/deleteActuExpe/:id', deleteActuExpe);
 //Chat Alexa devloper console
 router.get('/alexa/politicas', obtPoliticas);
 router.get('/alexa/deslinde', obtDeslinde);
-router.get('/alexa/aviso-privacidad', obtAviso);
 router.get('/alexa/terminos', obtTerminos);
-router.get('/alexa/servicios', obtServicios);
-router.get('/alexa/horario', obtHorario);
-router.get('/alexa/valores', obtValores);
+//no funcionan
+router.get('/alexa/aviso-privacidad', obtAviso);
+//************************* */
 router.get('/alexa/enlaces', obtEnlaces);
 router.get('/alexa/contacto', obtContacto);
 router.get('/alexa/logos', obtLogos);
 router.get('/alexa/nombre', obtNombreEmpresa);
 router.get('/alexa/nosotros', obtNosotros);
+
 router.get('/alexa/mision', obtMision);
 router.get('/alexa/vision', obtVision);
+router.get('/alexa/horario', obtHorario);
+router.get('/alexa/servicios', obtServicios);
+router.get('/alexa/valores', obtValores);
 router.get('/alexa/eslogan',obtEslogan);
+
 router.get('/alexa/info-completa', obtInfoEmpresaCompleta);
+
+router.get('/alexa/obtDoc',obtenerDoctoresConEspecialidad);
+
 
 module.exports = router;
