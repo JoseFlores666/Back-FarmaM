@@ -127,7 +127,7 @@ const obtTerminos = (req, res) => {
 };
 
 const obtServicios = (req, res) => {
-  const sql = "SELECT nombre, descripcion, costo, descuento FROM servicios";
+  const sql = "SELECT nombre, descripcion, costo, descuento,imagen FROM servicios";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ message: "Error en el servidor" });
     res.json(result);
