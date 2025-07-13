@@ -223,28 +223,8 @@ router.get('/getActuExpe', getActuExpe)
 router.delete('/deleteActuExpe/:id', deleteActuExpe);
 
 //Chat Alexa devloper console
-router.get('/alexa/politicas', obtPoliticas);
-router.get('/alexa/deslinde', obtDeslinde);
-router.get('/alexa/terminos', obtTerminos);
-//no funcionan
-router.get('/alexa/aviso-privacidad', obtAviso);
-//************************* */
-router.get('/alexa/enlaces', obtEnlaces);
 router.get('/alexa/contacto', obtContacto);
-router.get('/alexa/logos', obtLogos);
-router.get('/alexa/nombre', obtNombreEmpresa);
-router.get('/alexa/nosotros', obtNosotros);
-
-router.get('/alexa/mision', obtMision);
-router.get('/alexa/vision', obtVision);
-router.get('/alexa/horario', obtHorario);
 router.get('/alexa/servicios', obtServicios);
-router.get('/alexa/valores', obtValores);
-router.get('/alexa/eslogan',obtEslogan);
-
-router.get('/alexa/info-completa', obtInfoEmpresaCompleta);
-
 router.get('/alexa/obtDoc',obtenerDoctoresConEspecialidad);
-
 
 module.exports = router;

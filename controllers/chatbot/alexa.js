@@ -94,128 +94,37 @@ const getEmpresaChat = async (req, res) => {
   });
 };
 
-const obtPoliticas = (req, res) => {
-  const sql = "SELECT * FROM politicas WHERE estado = 'en proceso' AND vigencia = 'Vigente' LIMIT 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result[0]);
-  });
-};
-
-const obtDeslinde = (req, res) => {
-  const sql = "SELECT * FROM deslinde_legal WHERE estado = 'en proceso' AND vigencia = 'Vigente' LIMIT 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result[0]);
-  });
-};
-
-const obtAviso = (req, res) => {
-  const sql = "SELECT * FROM avisopriv WHERE estado = 'en proceso' AND vigencia = 'Vigente' LIMIT 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result[0]);
-  });
-};
-
-const obtTerminos = (req, res) => {
-  const sql = "SELECT * FROM terminos_condiciones WHERE estado = 'en proceso' AND vigencia = 'Vigente' LIMIT 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result[0]);
-  });
-};
+const capitalizeFirstLetter = (string) =>
+  string.charAt(0).toUpperCase() + string.slice(1);
 
 const obtServicios = (req, res) => {
-  const sql = "SELECT nombre, descripcion, costo, descuento,imagen FROM servicios";
+  const sql = "SELECT nombre, descripcion, costo, descuento, imagen FROM servicios";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result);
-  });
-};
 
-const obtHorario = (req, res) => {
-  const sql = "SELECT dia, hora_inicio, hora_fin, activo FROM horario_empresa WHERE activo = 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result);
-  });
-};
+    const listItems = result.map(s => ({
+      nombre: s.nombre,
+      primaryText: capitalizeFirstLetter(s.nombre),
+      secondaryText: capitalizeFirstLetter(s.descripcion),
+      imageSource: s.imagen
+    }));
 
-const obtValores = (req, res) => {
-  const sql = "SELECT nombre, descripcion FROM valores";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result);
-  });
-};
+    const text = result.map(s => {
+      return `${capitalizeFirstLetter(s.nombre)}, ${s.descripcion}, costo: $${s.costo}, descuento: ${s.descuento}%`;
+    }).join('. ');
 
-const obtEnlaces = (req, res) => {
-  const sql = "SELECT nombre, url FROM enlaces";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result);
+    res.json({
+      text,
+      imageListData: {
+        type: "list",
+        listItems
+      }
+    });
   });
 };
 
 const obtContacto = (req, res) => {
   const sql = "SELECT direccion, email, telefono FROM datos_contacto";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result[0]);
-  });
-};
-
-const obtLogos = (req, res) => {
-  const sql = "SELECT url FROM logos WHERE isActive = 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result);
-  });
-};
-
-const obtNombreEmpresa = (req, res) => {
-  const sql = "SELECT nombre FROM empresa LIMIT 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json({ nombre: result[0]?.nombre });
-  });
-};
-
-const obtNosotros = (req, res) => {
-  const sql = "SELECT nosotros FROM empresa LIMIT 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json({ nosotros: result[0]?.nosotros });
-  });
-};
-
-const obtMision = (req, res) => {
-  const sql = "SELECT mision FROM empresa LIMIT 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json({ mision: result[0]?.mision });
-  });
-};
-
-const obtVision = (req, res) => {
-  const sql = "SELECT vision FROM empresa LIMIT 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json({ vision: result[0]?.vision });
-  });
-};
-
-const obtEslogan = (req, res) => {
-  const sql = "SELECT eslogan FROM empresa LIMIT 1";
-  db.query(sql, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json({ eslogan: result[0]?.eslogan });
-  });
-};
-
-const obtInfoEmpresaCompleta = (req, res) => {
-  const sql = `SELECT nombre, nosotros, mision, vision, eslogan FROM empresa LIMIT 1`;
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ message: "Error en el servidor" });
     res.json(result[0]);
@@ -238,22 +147,8 @@ const obtenerDoctoresConEspecialidad = (req, res) => {
 };
 
 module.exports = {
-  obtPoliticas,
-  obtDeslinde,
-  obtAviso,
-  obtTerminos,
   obtServicios,
-  obtHorario,
-  obtValores,
-  obtEnlaces,
   obtContacto,
-  obtLogos,
   getEmpresaChat,
-   obtNombreEmpresa,
-  obtNosotros,
-  obtMision,
-  obtVision,
-  obtEslogan,
-  obtInfoEmpresaCompleta,
   obtenerDoctoresConEspecialidad
 };
