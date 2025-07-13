@@ -116,7 +116,9 @@ const obtServicios = (req, res) => {
     res.json({
       text,
       imageListData: {
-        type: "list",
+        type: "object",
+        objectId: "serviciosList",
+        title: "Servicios médicos disponibles",
         listItems
       }
     });
