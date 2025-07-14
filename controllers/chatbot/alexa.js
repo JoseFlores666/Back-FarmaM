@@ -125,7 +125,7 @@ const obtServicios = (req, res) => {
 };
 
 const obtServiciosDet = (req, res) => {
-  const nombreBuscado = req.query.nombre; // lo recibimos como query param
+  const nombreBuscado = req.query.nombre; 
 
   if (!nombreBuscado) {
     return res.status(400).json({ message: "Falta el parámetro 'nombre'" });
@@ -182,14 +182,34 @@ const obtenerDoctoresConEspecialidad = (req, res) => {
   const sql = `
     SELECT 
       CONCAT(d.nomdoc, ' ', d.apepaternodoc, ' ', d.apematernodoc) AS nombre_completo,
-      e.titulo AS especialidad
+      e.titulo AS especialidad,
+      d.foto_doc AS imagen 
     FROM doctor d
     JOIN especialidad e ON d.codespe = e.codespe
   `;
 
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ message: "Error en el servidor" });
-    res.json(result);
+
+    const listItems = result.map(d => ({
+      primaryText: d.nombre_completo,
+      secondaryText: d.especialidad,
+      imageSource: d.imagen || "https://via.placeholder.com/200x200.png?text=Doctor" 
+    }));
+
+    const text = result.map(d => {
+      return `${d.nombre_completo}, especialista en ${d.especialidad}`;
+    }).join('. ');
+
+    res.json({
+      text,
+      imageListData: {
+        type: "object",
+        objectId: "personalList",
+        title: "Personal Médico",
+        listItems
+      }
+    });
   });
 };
 
