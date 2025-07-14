@@ -198,7 +198,7 @@ const obtenerDoctoresConEspecialidad = (req, res) => {
     }));
 
     const text = result.map(d => {
-      return `${d.nombre_completo}, especialista en ${d.especialidad}`;
+      return `${d.nombre_completo},${d.especialidad}`;
     }).join('. ');
 
     res.json({
