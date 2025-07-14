@@ -123,44 +123,32 @@ const obtServicios = (req, res) => {
     });
   });
 };
+
+
+
 const obtServiciosDet = (req, res) => {
   const sql = "SELECT nombre, descripcion, costo, descuento, imagen FROM servicios";
   db.query(sql, (err, result) => {
     if (err) return res.status(500).json({ message: "Error en el servidor" });
 
-    const servicios = result.map(s => ({
-      nombre: s.nombre,
-      detailImageRightData: {
-        type: "object",
-        objectId: "servicioDetalle",
-        image: {
-          contentDescription: s.nombre,
-          sources: [
-            { url: s.imagen }
-          ]
-        },
-        textContent: {
-          primaryText: {
-            type: "PlainText",
-            text: capitalizeFirstLetter(s.nombre)
-          },
-          secondaryText: {
-            type: "PlainText",
-            text: capitalizeFirstLetter(s.descripcion)
-          },
-          locationText: {
-            type: "PlainText",
-            text: `Costo: $${s.costo}. Descuento: ${s.descuento}%`
-          }
-        }
-      }
+    const listItems = result.map(s => ({
+      nombre: s.nombre,  
+      imageSource: s.imagen,
+      primaryText: capitalizeFirstLetter(s.nombre),
+      secondaryText: capitalizeFirstLetter(s.descripcion),
+      locationText: `Costo: $${s.costo}. Descuento: ${s.descuento}%`
     }));
 
     res.json({
-      servicios  // enviamos todos los servicios para que Alexa filtre por nombre
+      imageListData: {
+        type: "object",
+        objectId: "detalleServicios",
+        listItems
+      }
     });
   });
 };
+
 
 
 
