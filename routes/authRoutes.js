@@ -225,7 +225,7 @@ router.delete('/deleteActuExpe/:id', deleteActuExpe);
 //Chat Alexa devloper console
 router.get('/alexa/contacto', obtContacto);
 router.get('/alexa/servicios', obtServicios);
-router.get('/alexa/obtServDet',obtServiciosDet);
+router.get('/alexa/obtServDet', obtServiciosDet);
 router.get('/alexa/obtDoc',obtenerDoctoresConEspecialidad);
 
 module.exports = router;

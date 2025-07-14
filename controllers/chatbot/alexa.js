@@ -124,33 +124,51 @@ const obtServicios = (req, res) => {
   });
 };
 
-
-
 const obtServiciosDet = (req, res) => {
-  const sql = "SELECT nombre, descripcion, costo, descuento, imagen FROM servicios";
-  db.query(sql, (err, result) => {
+  const nombreBuscado = req.query.nombre; // lo recibimos como query param
+
+  if (!nombreBuscado) {
+    return res.status(400).json({ message: "Falta el parámetro 'nombre'" });
+  }
+
+  const sql = "SELECT nombre, descripcion, costo, descuento, imagen FROM servicios WHERE LOWER(nombre) = LOWER(?)";
+
+  db.query(sql, [nombreBuscado], (err, result) => {
     if (err) return res.status(500).json({ message: "Error en el servidor" });
+    if (result.length === 0) return res.status(404).json({ message: "Servicio no encontrado" });
 
-    const listItems = result.map(s => ({
-      nombre: s.nombre,  
-      imageSource: s.imagen,
-      primaryText: capitalizeFirstLetter(s.nombre),
-      secondaryText: capitalizeFirstLetter(s.descripcion),
-      locationText: `Costo: $${s.costo}. Descuento: ${s.descuento}%`
-    }));
+    const s = result[0];
 
-    res.json({
-      imageListData: {
+    const servicioDetalle = {
+      detailImageRightData: {
         type: "object",
-        objectId: "detalleServicios",
-        listItems
+        objectId: "servicioDetalle",
+        image: {
+          contentDescription: s.nombre,
+          sources: [
+            { url: s.imagen }
+          ]
+        },
+        textContent: {
+          primaryText: {
+            type: "PlainText",
+            text: capitalizeFirstLetter(s.nombre)
+          },
+          secondaryText: {
+            type: "PlainText",
+            text: capitalizeFirstLetter(s.descripcion)
+          },
+          locationText: {
+            type: "PlainText",
+            text: `Costo: $${s.costo}. Descuento: ${s.descuento}%`
+          }
+        }
       }
-    });
+    };
+
+    res.json(servicioDetalle);
   });
 };
-
-
-
 
 const obtContacto = (req, res) => {
   const sql = "SELECT direccion, email, telefono FROM datos_contacto";
