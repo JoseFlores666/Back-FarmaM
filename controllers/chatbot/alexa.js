@@ -214,7 +214,6 @@ const obtenerDoctoresConEspecialidad = (req, res) => {
     });
   });
 };
-
 const obtServiciosDoctor = (req, res) => {
   let { coddoc } = req.params;
 
@@ -245,8 +244,6 @@ const obtServiciosDoctor = (req, res) => {
       return res.status(500).json({ message: "Error en el servidor" });
     }
 
-    console.log("Servicios encontrados para coddoc", coddocNum, ":", result);
-
     if (!result || result.length === 0) {
       return res.json({
         text: "No se encontraron servicios para este doctor.",
@@ -261,13 +258,10 @@ const obtServiciosDoctor = (req, res) => {
 
     const listItems = result.map(s => ({
       id: s.id.toString(),
-      primaryText: {
-        type: "PlainText",
-        text: s.nombre
-      }
+      primaryText: s.nombre  
     }));
 
-    const text = "Servicios del doctor: " + listItems.map(s => s.primaryText.text).join(", ");
+    const text = "Servicios del doctor: " + listItems.map(s => s.primaryText).join(", ");
 
     res.json({
       text,
