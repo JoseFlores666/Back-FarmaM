@@ -12,7 +12,7 @@ const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondici
 const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/Perfil-Empresa/CrudEnlaces');
 const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
 const { getEmpresa, updateEmpresa } = require('../controllers/Perfil-Empresa/CrudEmpresa');
-const { getEmpresaChat, obtAviso, obtContacto, obtDeslinde, obtEnlaces, obtEslogan, obtHorario, obtInfoEmpresaCompleta, obtLogos, obtMision, obtNombreEmpresa, obtNosotros, obtPoliticas, obtServicios, obtTerminos, obtValores, obtVision, obtenerDoctoresConEspecialidad, obtServiciosDet, obtServiciosDoctor } =require('../controllers/chatbot/alexa');
+const { getEmpresaChat, obtAviso, obtContacto, obtDeslinde, obtEnlaces, obtEslogan, obtHorario, obtInfoEmpresaCompleta, obtLogos, obtMision, obtNombreEmpresa, obtNosotros, obtPoliticas, obtServicios, obtTerminos, obtValores, obtVision, obtenerDoctoresConEspecialidad, obtServiciosDet, obtServiciosDoctor, loginAlexa } =require('../controllers/chatbot/alexa');
 const { getContactInfo, upsertContactInfo } = require('../controllers/Perfil-Empresa/CrudContact');
 const { createAudit, getAuditLogs } = require('../controllers/Perfil-Empresa/CrudAuditoria');
 const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../controllers/Monitor-Incidencias/CrudUsuariosBlock');
@@ -228,5 +228,6 @@ router.get('/alexa/servicios', obtServicios);
 router.get('/alexa/obtServDet', obtServiciosDet);
 router.get('/alexa/obtDoc',obtenerDoctoresConEspecialidad);
 router.get('/alexa/serviciosDoctor/:coddoc',obtServiciosDoctor)
+router.post('/alexa/loginAlexa', loginAlexa);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../config/db');
+const bcrypt = require('bcryptjs');
 
 const getEmpresaChat = async (req, res) => {
   const sql = `
@@ -275,11 +276,46 @@ const obtServiciosDoctor = (req, res) => {
   });
 };
 
+
+
+const loginAlexa = (req, res) => {
+    const { usuario, password } = req.body;
+
+    if (!usuario || !password) {
+        return res.status(400).json({ success: false, message: 'Usuario y contraseña requeridos.' });
+    }
+
+    db.query('SELECT id, usuario, password FROM usuarios WHERE usuario = ?', [usuario], (err, result) => {
+        if (err) {
+            console.error('Error en la consulta:', err);
+            return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+        }
+
+        if (result.length === 0) {
+            return res.status(401).json({ success: false, message: 'Credenciales inválidas.' });
+        }
+
+        const user = result[0];
+        const passwordIsValid = bcrypt.compareSync(password, user.password);
+
+        if (!passwordIsValid) {
+            return res.status(401).json({ success: false, message: 'Contraseña incorrecta.' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Inicio de sesión exitoso',
+            usuario: user.usuario
+        });
+    });
+};
+
 module.exports = {
   obtServicios,
   obtContacto,
   getEmpresaChat,
   obtServiciosDet,
   obtenerDoctoresConEspecialidad,
-  obtServiciosDoctor
+  obtServiciosDoctor,
+  loginAlexa
 };
