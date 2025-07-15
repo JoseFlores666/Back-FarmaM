@@ -215,10 +215,77 @@ const obtenerDoctoresConEspecialidad = (req, res) => {
   });
 };
 
+const obtServiciosDoctor = (req, res) => {
+  let { coddoc } = req.params;
+
+  if (!coddoc) {
+    return res.status(400).json({ message: "Falta el parámetro coddoc en la ruta" });
+  }
+
+  coddoc = coddoc.trim();
+
+  const coddocNum = Number(coddoc);
+  if (isNaN(coddocNum)) {
+    return res.status(400).json({ message: "El parámetro coddoc debe ser un número válido" });
+  }
+
+  const sql = `
+    SELECT 
+      s.id,
+      s.nombre
+    FROM doctor d
+    JOIN doctor_servicios ds ON d.coddoc = ds.doctor_id
+    JOIN servicios s ON ds.servicio_id = s.id
+    WHERE d.coddoc = ?
+  `;
+
+  db.query(sql, [coddocNum], (err, result) => {
+    if (err) {
+      console.error("Error al obtener servicios del doctor:", err);
+      return res.status(500).json({ message: "Error en el servidor" });
+    }
+
+    console.log("Servicios encontrados para coddoc", coddocNum, ":", result);
+
+    if (!result || result.length === 0) {
+      return res.json({
+        text: "No se encontraron servicios para este doctor.",
+        textListData: {
+          type: "object",
+          objectId: "serviciosDoctorList",
+          title: "Servicios del Doctor",
+          listItems: []
+        }
+      });
+    }
+
+    const listItems = result.map(s => ({
+      id: s.id.toString(),
+      primaryText: {
+        type: "PlainText",
+        text: s.nombre
+      }
+    }));
+
+    const text = "Servicios del doctor: " + listItems.map(s => s.primaryText.text).join(", ");
+
+    res.json({
+      text,
+      textListData: {
+        type: "object",
+        objectId: "serviciosDoctorList",
+        title: "Servicios del Doctor",
+        listItems
+      }
+    });
+  });
+};
+
 module.exports = {
   obtServicios,
   obtContacto,
   getEmpresaChat,
   obtServiciosDet,
-  obtenerDoctoresConEspecialidad
+  obtenerDoctoresConEspecialidad,
+  obtServiciosDoctor
 };
