@@ -181,6 +181,7 @@ const obtContacto = (req, res) => {
 const obtenerDoctoresConEspecialidad = (req, res) => {
   const sql = `
     SELECT 
+          d.coddoc,
       CONCAT(d.nomdoc, ' ', d.apepaternodoc, ' ', d.apematernodoc) AS nombre_completo,
       e.titulo AS especialidad,
       d.foto_doc AS imagen 
@@ -194,11 +195,12 @@ const obtenerDoctoresConEspecialidad = (req, res) => {
     const listItems = result.map(d => ({
       primaryText: d.nombre_completo,
       secondaryText: d.especialidad,
-      imageSource: d.imagen || "https://via.placeholder.com/200x200.png?text=Doctor" 
+      imageSource: d.imagen || "https://via.placeholder.com/200x200.png?text=Doctor",
+      token: d.coddoc 
     }));
 
     const text = result.map(d => {
-      return `${d.nombre_completo},${d.especialidad}`;
+      return `${d.nombre_completo}, ${d.especialidad}`;
     }).join('. ');
 
     res.json({
