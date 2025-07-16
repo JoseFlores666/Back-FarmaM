@@ -311,7 +311,13 @@ const obtCitasUsuario = (req, res) => {
     }
 
     const sql = `
-        SELECT c.id, c.fecha, c.hora, c.estado, c.atendido, c.motivo_cita
+        SELECT 
+            c.id,
+            DATE_FORMAT(c.fecha, '%d/%m/%Y') AS fecha,
+            TIME_FORMAT(c.hora, '%H:%i') AS hora,
+            c.estado,
+            c.atendido,
+            c.motivo_cita
         FROM citas c
         JOIN usuarios u ON c.codpaci = u.id
         WHERE u.usuario = ?
@@ -330,6 +336,7 @@ const obtCitasUsuario = (req, res) => {
         });
     });
 };
+
 
 
 module.exports = {
