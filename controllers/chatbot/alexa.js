@@ -277,38 +277,60 @@ const obtServiciosDoctor = (req, res) => {
 };
 
 
-
 const loginAlexa = (req, res) => {
-    const { usuario, password } = req.body;
+    const { usuario } = req.body;
 
-    if (!usuario || !password) {
-        return res.status(400).json({ success: false, message: 'Usuario y contraseña requeridos.' });
+    if (!usuario) {
+        return res.status(400).json({ success: false, message: 'El usuario es requerido.' });
     }
 
-    db.query('SELECT id, usuario, password FROM usuarios WHERE usuario = ?', [usuario], (err, result) => {
+    db.query('SELECT id, usuario FROM usuarios WHERE usuario = ?', [usuario], (err, result) => {
         if (err) {
             console.error('Error en la consulta:', err);
             return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
         }
 
         if (result.length === 0) {
-            return res.status(401).json({ success: false, message: 'Credenciales inválidas.' });
-        }
-
-        const user = result[0];
-        const passwordIsValid = bcrypt.compareSync(password, user.password);
-
-        if (!passwordIsValid) {
-            return res.status(401).json({ success: false, message: 'Contraseña incorrecta.' });
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
         }
 
         return res.status(200).json({
             success: true,
-            message: 'Inicio de sesión exitoso',
-            usuario: user.usuario
+            message: 'Usuario encontrado.',
+            usuario: result[0].usuario,
+            id: result[0].id
         });
     });
 };
+
+const obtCitasUsuario = (req, res) => {
+    const { usuario } = req.params;
+
+    if (!usuario) {
+        return res.status(400).json({ success: false, message: 'El nombre de usuario es requerido.' });
+    }
+
+    const sql = `
+        SELECT c.id, c.fecha, c.hora, c.estado, c.atendido, c.motivo_cita
+        FROM citas c
+        JOIN usuarios u ON c.codpaci = u.id
+        WHERE u.usuario = ?
+        ORDER BY c.fecha, c.hora
+    `;
+
+    db.query(sql, [usuario], (err, result) => {
+        if (err) {
+            console.error('Error al obtener citas:', err);
+            return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            citas: result
+        });
+    });
+};
+
 
 module.exports = {
   obtServicios,
@@ -317,5 +339,6 @@ module.exports = {
   obtServiciosDet,
   obtenerDoctoresConEspecialidad,
   obtServiciosDoctor,
-  loginAlexa
+  loginAlexa,
+  obtCitasUsuario
 };
