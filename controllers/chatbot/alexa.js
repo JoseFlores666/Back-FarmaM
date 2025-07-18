@@ -276,32 +276,46 @@ const obtServiciosDoctor = (req, res) => {
   });
 };
 
-
 const loginAlexa = (req, res) => {
-    const { usuario } = req.body;
+    const { usuario, telefono } = req.body;
 
-    if (!usuario) {
-        return res.status(400).json({ success: false, message: 'El usuario es requerido.' });
+    if (!usuario || !telefono) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'El usuario y el teléfono son requeridos.' 
+        });
     }
 
-    db.query('SELECT id, usuario FROM usuarios WHERE usuario = ?', [usuario], (err, result) => {
-        if (err) {
-            console.error('Error en la consulta:', err);
-            return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
-        }
+    db.query(
+        'SELECT id, usuario, telefono FROM usuarios WHERE usuario = ? AND telefono = ?', 
+        [usuario, telefono], 
+        (err, result) => {
+            if (err) {
+                console.error('Error en la consulta:', err);
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Error interno del servidor.' 
+                });
+            }
 
-        if (result.length === 0) {
-            return res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
-        }
+            if (result.length === 0) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'Usuario o teléfono incorrecto.' 
+                });
+            }
 
-        return res.status(200).json({
-            success: true,
-            message: 'Usuario encontrado.',
-            usuario: result[0].usuario,
-            id: result[0].id
-        });
-    });
+            return res.status(200).json({
+                success: true,
+                message: 'Usuario autenticado correctamente.',
+                id: result[0].id,
+                usuario: result[0].usuario,
+                telefono: result[0].telefono
+            });
+        }
+    );
 };
+
 
 const obtCitasUsuario = (req, res) => {
     const { usuario } = req.params;
