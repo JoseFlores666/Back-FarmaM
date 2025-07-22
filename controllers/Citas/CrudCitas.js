@@ -78,6 +78,7 @@ const getCitasById = (req, res) => {
 
 const cancelarCita = (req, res) => {
     const { id, codpaci } = req.body;
+    console.log(req.body)
     if (!id || !codpaci) {
         return res.status(400).json({ message: "Faltan datos requeridos" });
     }
