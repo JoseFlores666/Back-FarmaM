@@ -215,6 +215,7 @@ const obtenerDoctoresConEspecialidad = (req, res) => {
     });
   });
 };
+
 const obtServiciosDoctor = (req, res) => {
   let { coddoc } = req.params;
 

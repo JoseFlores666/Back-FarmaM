@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../config/db');
+const cloudinary = require('cloudinary').v2;
 
 const getDoc = (req, res) => {
     const sql = `
@@ -46,77 +47,154 @@ GROUP BY d.coddoc;
         return res.json(result);
     });
 };
-
-
 const createDoc = async (req, res) => {
-    const { nomdoc, telefo, correo, genero, edad, apepaternodoc, apematernodoc, especialidad, password, foto_doc } = req.body;
+  try {
+    const { nomdoc, telefo, correo, genero, edad, apepaternodoc, apematernodoc, especialidad, password } = req.body;
+    const nuevaImagen = req.file;
 
-    if (!nomdoc || !telefo || !correo || !genero || !edad || !apepaternodoc || !apematernodoc || !especialidad, !password, !foto_doc) {
-        return res.status(400).json({ message: "Todos los campos son obligatorios" });
+    // Validación
+    if (!nomdoc || !telefo || !correo || !genero || !edad || !apepaternodoc || !apematernodoc || !especialidad || !password || !nuevaImagen) {
+      return res.status(400).json({ message: "Todos los campos son obligatorios" });
     }
 
-    try {
-        const sql = `
-            INSERT INTO doctor (nomdoc, telefo, correo, genero, edad, apepaternodoc, apematernodoc,password,foto_doc, codespe) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `;
+    const imagenUrl = nuevaImagen.path;
+    const publicId = nuevaImagen.filename;
 
-        await db.query(sql, [nomdoc, telefo, correo, genero, edad, apepaternodoc, apematernodoc, password, foto_doc, especialidad]);
+    const sql = `
+      INSERT INTO doctor 
+      (nomdoc, telefo, correo, genero, edad, apepaternodoc, apematernodoc, password, foto_doc, public_id, codespe) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-        res.status(201).json({ message: "Doctor agregado correctamente" });
+    await db.query(sql, [
+      nomdoc, telefo, correo, genero, edad,
+      apepaternodoc, apematernodoc, password,
+      imagenUrl, publicId, especialidad
+    ]);
 
-    } catch (error) {
-        console.error('Error en la consulta:', error);
-        res.status(500).json({ message: "Error en el servidor" });
-    }
+    res.status(201).json({ message: "Doctor agregado correctamente" });
+
+  } catch (error) {
+    console.error('Error al crear doctor:', error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
 };
 
 const updateDoc = async (req, res) => {
+  try {
     const { id } = req.params;
-    const { nomdoc, telefo, correo, genero, edad, apepaternodoc, apematernodoc, especialidad, password, foto_doc } = req.body;
+    const { nomdoc, telefo, correo, genero, edad, apepaternodoc, apematernodoc, especialidad, password } = req.body;
+    const nuevaImagen = req.file;
 
-    try {
-        const sql = `
-            UPDATE doctor 
-            SET nomdoc=?, telefo=?, correo=?, genero=?, edad=?, apepaternodoc=?, apematernodoc=?,password=?,foto_doc=?, codespe=? 
-            WHERE coddoc=?
-        `;
+    // Obtener el public_id actual del doctor
+    const rows = await new Promise((resolve, reject) => {
+      db.query('SELECT public_id FROM doctor WHERE coddoc = ?', [id], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
 
-        const result = await db.query(sql, [nomdoc, telefo, correo, genero, edad, apepaternodoc, apematernodoc, especialidad, password, foto_doc, id]);
+    const oldPublicId = rows.length > 0 ? rows[0].public_id : null;
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Doctor no encontrado" });
-        }
+    let imagenUrl = null;
+    let newPublicId = null;
 
-        res.json({ message: "Doctor actualizado correctamente" });
-
-    } catch (error) {
-        console.error('Error en la consulta:', error);
-        res.status(500).json({ message: "Error en el servidor", error: error.message });
+    // Si hay nueva imagen, eliminar la antigua de Cloudinary y preparar datos para update
+    if (nuevaImagen) {
+      if (oldPublicId) {
+        const destroyResponse = await cloudinary.uploader.destroy(oldPublicId);
+        console.log('Imagen antigua eliminada:', destroyResponse);
+      }
+      imagenUrl = nuevaImagen.path;
+      newPublicId = nuevaImagen.filename;
     }
-};
 
+    // Construir SQL y params según si hay o no nueva imagen
+    let sql, params;
+    if (imagenUrl && newPublicId) {
+      sql = `
+        UPDATE doctor 
+        SET nomdoc = ?, telefo = ?, correo = ?, genero = ?, edad = ?, apepaternodoc = ?, apematernodoc = ?, 
+            password = ?, foto_doc = ?, public_id = ?, codespe = ?
+        WHERE coddoc = ?`;
+      params = [
+        nomdoc, telefo, correo, genero, edad, apepaternodoc, apematernodoc,
+        password, imagenUrl, newPublicId, especialidad, id
+      ];
+    } else {
+      sql = `
+        UPDATE doctor 
+        SET nomdoc = ?, telefo = ?, correo = ?, genero = ?, edad = ?, apepaternodoc = ?, apematernodoc = ?, 
+            password = ?, codespe = ?
+        WHERE coddoc = ?`;
+      params = [
+        nomdoc, telefo, correo, genero, edad, apepaternodoc, apematernodoc,
+        password, especialidad, id
+      ];
+    }
+
+    await new Promise((resolve, reject) => {
+      db.query(sql, params, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    res.json({ message: "Doctor actualizado correctamente" });
+
+  } catch (error) {
+    console.error('Error en updateDoc:', error);
+    res.status(500).json({ message: "Error inesperado al actualizar doctor" });
+  }
+};
 const deleteDoc = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const sql = `DELETE FROM doctor WHERE coddoc = ?`;
-        db.query(sql, [id], (err, result) => {
-            if (err) {
-                console.error("Error en la consulta:", err);
-                return res.status(500).json({ message: "Error en el servidor" });
-            }
+  const { id } = req.params;
+  try {
+    // Obtener public_id antes de borrar
+    const rows = await new Promise((resolve, reject) => {
+      db.query('SELECT public_id FROM doctor WHERE coddoc = ?', [id], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
 
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ message: "Doctor no encontrado" });
-            }
-
-            res.json({ message: "Doctor eliminado correctamente" });
-        });
-    } catch (error) {
-        console.error("Error en la consulta:", error);
-        res.status(500).json({ message: "Error en el servidor" });
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: "Doctor no encontrado" });
     }
+
+    const publicId = rows[0].public_id;
+
+    // Eliminar imagen en Cloudinary si existe publicId
+    if (publicId) {
+      try {
+        const destroyResponse = await cloudinary.uploader.destroy(publicId);
+        console.log('Imagen eliminada de Cloudinary:', destroyResponse);
+      } catch (err) {
+        console.error('Error eliminando imagen en Cloudinary:', err);
+        // No interrumpir la eliminación del doctor en BD si falla la imagen
+      }
+    }
+
+    // Borrar doctor de la base de datos
+    const result = await new Promise((resolve, reject) => {
+      db.query('DELETE FROM doctor WHERE coddoc = ?', [id], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Doctor no encontrado" });
+    }
+
+    res.json({ message: "Doctor eliminado correctamente" });
+
+  } catch (error) {
+    console.error("Error en la consulta:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
 };
+
 
 const upsertCostosDoctor = (req, res) => {
     const { doctor_id, precio_base, descuento } = req.body;

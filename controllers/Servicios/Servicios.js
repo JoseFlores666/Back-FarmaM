@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../config/db');
 const { createAudit } = require('../Perfil-Empresa/CrudAuditoria');
+const cloudinary = require('cloudinary').v2;
 
 const getServicios = async (req, res) => {
     const sql = `
@@ -48,7 +49,6 @@ const getServiciosAsignadosCount = (req, res) => {
     });
 };
 
-
 const getServiciosDelDoctor = (req, res) => {
     const { coddoc } = req.params;
 
@@ -74,96 +74,139 @@ const getServiciosDelDoctor = (req, res) => {
     });
 };
 
+const crearServicios = async (req, res) => {
+  const { nombre, descripcion, id_usuario, costo, descuento } = req.body;
+  const file = req.file;
 
-const crearServicios = (req, res) => {
-    const { nombre, descripcion, imagen, id_usuario, costo, descuento } = req.body;
+  if (!nombre || !descripcion || !file || costo === undefined || descuento === undefined || !id_usuario) {
+    return res.status(400).json({ message: "Todos los campos son obligatorios, incluyendo la imagen y id_usuario" });
+  }
 
-    if (!nombre || !descripcion || !imagen || costo === undefined || descuento === undefined) {
-        return res.status(400).json({ message: "Todos los campos son obligatorios" });
+  try {
+    // Aquí ya no es necesario volver a subir a Cloudinary, solo usamos los datos generados por multer-storage-cloudinary
+    const imagenUrl = file.path;        // URL segura generada por multer-storage-cloudinary
+    const public_id = file.filename;    // public_id generado por Cloudinary (equivale a 'filename')
+
+    const sql = "INSERT INTO servicios (nombre, descripcion, imagen, public_id, costo, descuento) VALUES (?, ?, ?, ?, ?, ?)";
+    db.query(sql, [nombre, descripcion, imagenUrl, public_id, costo, descuento], (err, result) => {
+      if (err) {
+        console.error('Error al insertar servicio:', err);
+        return res.status(500).json({ message: "Error en el servidor" });
+      }
+
+      const newData = { id: result.insertId, nombre, descripcion, imagen: imagenUrl, costo, descuento };
+      const oldData = JSON.stringify({ message: "N/A" });
+
+      createAudit(id_usuario, "CREATE", "servicios", oldData, JSON.stringify(newData));
+
+      return res.status(201).json({ message: "Servicio agregado con éxito", id: result.insertId });
+    });
+  } catch (error) {
+    console.error("Error en el proceso:", error);
+    return res.status(500).json({ message: "Error procesando la solicitud" });
+  }
+};
+const updateServicios = async (req, res) => {
+  const { id } = req.params;
+  const { nombre, descripcion, id_usuario, costo, descuento } = req.body;
+  const nuevaImagen = req.file;
+
+  if (!id_usuario) {
+    return res.status(400).json({ message: "id_usuario es requerido para la auditoría" });
+  }
+
+  const getOldDataSql = "SELECT * FROM servicios WHERE id = ?";
+  db.query(getOldDataSql, [id], async (err, rows) => {
+    if (err || rows.length === 0) {
+      return res.status(500).json({ message: "Error al obtener datos anteriores" });
     }
 
-    const sql = "INSERT INTO servicios (nombre, descripcion, imagen, costo, descuento) VALUES (?, ?, ?, ?, ?)";
-    db.query(sql, [nombre, descripcion, imagen, costo, descuento], (err, result) => {
-        if (err) {
-            console.error('Error al insertar servicio:', err);
-            return res.status(500).json({ message: "Error en el servidor" });
+    const oldData = rows[0];
+    let imagenUrl = oldData.imagen;
+    let public_id = oldData.public_id;
+
+    if (nuevaImagen) {
+      if (oldData.public_id) {
+        try {
+          await cloudinary.uploader.destroy(oldData.public_id);
+        } catch (err) {
+          console.error("Error al eliminar imagen anterior:", err);
         }
+      }
+      imagenUrl = nuevaImagen.path;
+      public_id = nuevaImagen.filename;
+    }
 
-        const newData = { id: result.insertId, nombre, descripcion, imagen, costo, descuento };
-        const oldData = JSON.stringify({ message: "N/A" });
-        createAudit(id_usuario, "CREATE", "servicios", oldData, JSON.stringify(newData));
+    const updateSql = `
+      UPDATE servicios 
+      SET nombre = ?, descripcion = ?, imagen = ?, public_id = ?, costo = ?, descuento = ?
+      WHERE id = ?
+    `;
+    const params = [nombre, descripcion, imagenUrl, public_id, costo, descuento, id];
 
-        return res.status(201).json({ message: "Servicio agregado con éxito", id: result.insertId });
+    db.query(updateSql, params, (err) => {
+      if (err) return res.status(500).json({ message: "Error al actualizar servicio" });
+
+      const newData = {
+        id,
+        nombre,
+        descripcion,
+        imagen: imagenUrl,
+        public_id,
+        costo,
+        descuento
+      };
+
+      createAudit(id_usuario, "UPDATE", "servicios", JSON.stringify(oldData), JSON.stringify(newData));
+
+      res.json({ success: true, message: "Servicio actualizado correctamente", newData });
     });
+  });
 };
-
-const updateServicios = (req, res) => {
-    const { id } = req.params; 
-    const { nombre, descripcion, imagen, id_usuario, costo, descuento } = req.body;
-
-    const sql = "UPDATE servicios SET nombre = ?, descripcion = ?, imagen = ?, costo = ?, descuento = ? WHERE id = ?";
-    db.query(sql, [nombre, descripcion, imagen, costo, descuento, id], (err, result) => {
-        if (err) {
-            console.error('Error al actualizar servicio:', err);
-            return res.status(500).json({ message: "Error en el servidor" });
-        }
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "No se encontró el servicio para actualizar" });
-        }
-
-        const newData = { id, nombre, descripcion, imagen, costo, descuento };
-
-        const selectQuery = "SELECT * FROM servicios WHERE id = ?";
-        db.query(selectQuery, [id], (error, result) => {
-            if (error) {
-                console.error("Error al consultar servicio:", error);
-                return res.status(500).json({ message: "Error al consultar servicio", error });
-            }
-
-            if (result.length === 0) {
-                return res.status(404).json({ message: "Servicio no encontrado" });
-            }
-
-            const oldData = result[0];
-            createAudit(id_usuario, "UPDATE", "servicios", JSON.stringify(oldData), JSON.stringify(newData));
-
-            return res.json({ message: "Servicio actualizado con éxito" });
-        });
-    });
-};
-
 
 
 const deleteServicios = (req, res) => {
-    const { id } = req.params;
-    const { id_usuario } = req.body;
+  const { id } = req.params;
+  const { id_usuario } = req.body;
 
-    const getOldDataSql = "SELECT * FROM servicios WHERE id = ?";
-    db.query(getOldDataSql, [id], (err, rows) => {
-        if (err) {
-            console.error("Error al obtener los datos anteriores:", err);
-            return res.status(500).json({ message: "Error al obtener los datos anteriores" });
-        }
+  if (!id_usuario) {
+    return res.status(400).json({ message: "id_usuario es requerido para la auditoría" });
+  }
 
-        if (rows.length === 0) {
-            return res.status(404).json({ error: "servicio no encontrado" });
-        }
+  const getOldDataSql = "SELECT * FROM servicios WHERE id = ?";
+  db.query(getOldDataSql, [id], async (err, rows) => {
+    if (err) {
+      console.error("Error al obtener los datos anteriores:", err);
+      return res.status(500).json({ message: "Error al obtener los datos anteriores" });
+    }
 
-        const valorEliminado = rows[0];
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Servicio no encontrado" });
+    }
 
-        const deleteSql = "DELETE FROM servicios WHERE id = ?";
-        db.query(deleteSql, [id], (err) => {
-            if (err) {
-                console.error("Error al eliminar valor:", err);
-                return res.status(500).json({ error: "Error al eliminar valor" });
-            }
+    const valorEliminado = rows[0];
 
-            createAudit(id_usuario, "DELETE", "servicios", JSON.stringify(valorEliminado), JSON.stringify({ message: "N/A" }));
+    // Eliminar imagen de Cloudinary si existe
+    if (valorEliminado.public_id) {
+      try {
+        await cloudinary.uploader.destroy(valorEliminado.public_id);
+      } catch (err) {
+        console.error("Error al eliminar imagen de Cloudinary:", err);
+      }
+    }
 
-            res.json({ success: true, message: "servicio eliminado correctamente", valorEliminado });
-        });
+    const deleteSql = "DELETE FROM servicios WHERE id = ?";
+    db.query(deleteSql, [id], (err) => {
+      if (err) {
+        console.error("Error al eliminar servicio:", err);
+        return res.status(500).json({ message: "Error al eliminar servicio" });
+      }
+
+      createAudit(id_usuario, "DELETE", "servicios", JSON.stringify(valorEliminado), JSON.stringify({ message: "Eliminado" }));
+
+      return res.json({ message: "Servicio eliminado correctamente", valorEliminado });
     });
+  });
 };
 
 const asignarServiciosDoctor = (req, res) => {

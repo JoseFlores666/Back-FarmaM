@@ -10,7 +10,7 @@ const { getDeslindesLegales, createDeslindeLegal, updateDeslindeLegal, deleteDes
 const { getPoliticas, createPolitica, updatePolitica, deletePolitica, getCurrentPolitica } = require('../controllers/Doc-Regulatorio/CrudPoliticas');
 const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondiciones, deleteTerminosCondiciones, getCurrentTerminos } = require('../controllers/Doc-Regulatorio/CrudTerminosYC');
 const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/Perfil-Empresa/CrudEnlaces');
-const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
+const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo, createLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
 const { getEmpresa, updateEmpresa } = require('../controllers/Perfil-Empresa/CrudEmpresa');
 const { getEmpresaChat, obtAviso, obtContacto, obtDeslinde, obtEnlaces, obtEslogan, obtHorario, obtInfoEmpresaCompleta, obtLogos, obtMision, obtNombreEmpresa, obtNosotros, obtPoliticas, obtServicios, obtTerminos, obtValores, obtVision, obtenerDoctoresConEspecialidad, obtServiciosDet, obtServiciosDoctor, loginAlexa, obtCitasUsuario } =require('../controllers/chatbot/alexa');
 const { getContactInfo, upsertContactInfo } = require('../controllers/Perfil-Empresa/CrudContact');
@@ -33,7 +33,10 @@ const { getPerfilbyid, updateperfilbyid } = require('../controllers/Perfil-Empre
 const { sendCorreo } = require('../controllers/Contactanos');
 const { generarTokenWear, vincularWear, desvincularWear } = require('../controllers/wearos/wearOsAuth');
 const { getNotiById } = require('../controllers/Notifications/Notification');
-const { getAvisosPriv, createAvisoPriv, updateAvisoPriv, deleteAvisoPriv, getCurrentAvisosPriv } = require('../controllers/Doc-Regulatorio/CRUDAvisoPriv')
+const { getAvisosPriv, createAvisoPriv, updateAvisoPriv, deleteAvisoPriv, getCurrentAvisosPriv } = require('../controllers/Doc-Regulatorio/CRUDAvisoPriv');
+const { getNoticias, deleteNoticia, updateNoticia, addNoticia } = require('../controllers/Perfil-Empresa/noticias');
+const upload = require('../middlewares/upload');
+const { consultaCsv } = require('../controllers/Citas/Predict');
 
 router.post('/login', login);
 router.get('/session', consultaSesion);
@@ -100,9 +103,10 @@ router.put('/updateperfilbyid/:id', updateperfilbyid);
 
 //CrudServicios
 router.get('/getServicios', getServicios);
-router.put('/updateServicios/:id', updateServicios);
-router.post('/crearServicios', crearServicios);
+router.put('/updateServicios/:id', upload.single('imagen'), updateServicios);
+router.post('/crearServicios', upload.single('imagen'), crearServicios);
 router.delete('/deleteServicios/:id', deleteServicios);
+
 router.post('/asignarServiciosDoctor/:coddoc', asignarServiciosDoctor);
 router.get('/getServiciosAsignadosCount/:coddoc', getServiciosAsignadosCount);
 router.get('/getServiciosDelDoctor/:coddoc', getServiciosDelDoctor);
@@ -116,14 +120,14 @@ router.delete('/deleteEnlace/:id', deleteEnlace);
 //CrudLogo
 router.get('/getAllLogos', getAllLogos);
 router.get('/getLogoActivo', getLogoActivo);
-router.put('/updateLogo/:id', updateLogo);
-router.post('/uploadLogo', uploadLogo);
+router.post('/createLogo', upload.single('imagen'), createLogo);
+router.put('/updateLogo/:id', upload.single('imagen'), updateLogo);
 router.delete('/deleteLogo/:id', deleteLogo);
 
 //CrudEspecialidad
 router.get('/getEspecialidades', getEspecialidades);
-router.post('/createEspec', crearEspecialidad)
-router.put('/updateEspec/:codespe', updateEspecialidad);
+router.post('/createEspec', upload.single('imagen'), crearEspecialidad);
+router.put('/updateEspec/:codespe', upload.single('imagen'), updateEspecialidad);
 router.delete('/deleteEspec/:codespe', deleteEspecialidad);
 
 //CrudEmpresa
@@ -133,8 +137,8 @@ router.put('/updateEmpresa/:id', updateEmpresa)
 
 //CrudValores
 router.get('/getValores', getValores)
-router.post('/createValor', createValor)
-router.put('/updateValores/:id', updateValores),
+router.post('/createValor', upload.single('imagen'), createValor)
+router.put('/updateValores/:id', upload.single('imagen'), updateValores),
     router.delete('/deleteValor/:id', deleteValor)
 
 
@@ -148,9 +152,10 @@ router.put('/upsertContactInfo', upsertContactInfo);
 
 //CrudDoc
 router.get('/getDoc', getDoc)
-router.post('/createDoc', createDoc)
+router.post('/createDoc',upload.single('imagen'), createDoc)
+router.put('/updateDoc/:id',upload.single('imagen'), updateDoc);
 router.delete('/deleteDoc/:id', deleteDoc)
-router.put('/updateDoc/:id', updateDoc);
+
 router.post('/loginDoc', loginDoc);
 router.post('/upsertCostosDoctor', upsertCostosDoctor);
 
@@ -218,6 +223,12 @@ router.get('/getRecetasByPacienteId/:id', getRecetasByPacienteId);
 router.get('/getRecetas', getRecetas);
 router.get('/getServiciosDeCita/:codcita', getServiciosDeCita);
 
+//crud seccion de noticias
+router.get('/getNoticias', getNoticias);
+router.post('/addNoticia', upload.single('imagen'), addNoticia);
+router.put('/updateNoticia/:id', upload.single('imagen'), updateNoticia);
+router.delete('/deleteNoticia/:id', deleteNoticia);
+
 //CrudActualizacion expediente aun no funciona
 router.get('/getActuExpe', getActuExpe)
 router.delete('/deleteActuExpe/:id', deleteActuExpe);
@@ -230,5 +241,8 @@ router.get('/alexa/obtDoc',obtenerDoctoresConEspecialidad);
 router.get('/alexa/serviciosDoctor/:coddoc',obtServiciosDoctor)
 router.post('/alexa/loginAlexa', loginAlexa);
 router.get('/alexa/citas/:usuario', obtCitasUsuario);
+
+//consulta csv PM3
+router.get('/consultaCsv', consultaCsv);
 
 module.exports = router;

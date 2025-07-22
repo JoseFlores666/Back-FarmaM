@@ -321,4 +321,4 @@ const deleteAllCitasByDoctor = (req, res) => {
 
 
 
-module.exports = { getCitas, generarCitas, createCita, reagendarCita, editarDatosCita, deleteCita, deleteAllCitasByDoctor, getCitasById, cancelarCita };
+module.exports = {getCitas, generarCitas, createCita, reagendarCita, editarDatosCita, deleteCita, deleteAllCitasByDoctor, getCitasById, cancelarCita };
