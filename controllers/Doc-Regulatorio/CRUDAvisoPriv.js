@@ -18,7 +18,7 @@ const isFechaValida = (fecha) => {
 };
 
 const getAvisosPriv = async (req, res) => {
-    const sql = "SELECT * FROM avisoPriv";
+    const sql = "SELECT * FROM avisopriv";
     db.query(sql, (err, result) => {
         if (err) {
             return res.status(500).json({ message: "Error en el servidor" });
@@ -36,20 +36,20 @@ const createAvisoPriv = async (req, res) => {
 
     const vigencia = 'Vigente';
 
-    const checkActiveSql = "SELECT * FROM avisoPriv WHERE vigencia = 'Vigente'";
+    const checkActiveSql = "SELECT * FROM avisopriv WHERE vigencia = 'Vigente'";
     db.query(checkActiveSql, async (err, activeResults) => {
         if (err) {
             return res.status(500).json({ message: "Error en el servidor" });
         }
 
         if (activeResults.length > 0) {
-            const updateActiveSql = "UPDATE avisoPriv SET vigencia = 'No vigente' WHERE id = ?";
+            const updateActiveSql = "UPDATE avisopriv SET vigencia = 'No vigente' WHERE id = ?";
             await db.query(updateActiveSql, [activeResults[0].id]);
         }
 
         const version = (activeResults.length === 0) ? '1.0' : (parseFloat(activeResults[0].version) + 1).toFixed(1);
 
-        const insertSql = "INSERT INTO avisoPriv (titulo, contenido, vigencia, fecha_creac, fecha_vigen, version, estado) VALUES (?, ?, ?, NOW(), ?, ?, 'en proc')";
+        const insertSql = "INSERT INTO avisopriv (titulo, contenido, vigencia, fecha_creac, fecha_vigen, version, estado) VALUES (?, ?, ?, NOW(), ?, ?, 'en proc')";
         db.query(insertSql, [titulo, contenido, vigencia, fecha_vigen, version], (err, result) => {
             if (err) {
                 return res.status(500).json({ message: "Ocurrió un error inesperado: " + err });
@@ -68,10 +68,10 @@ const updateAvisoPriv = async (req, res) => {
     }
 
     try {
-        const updateCurrentSql = "UPDATE avisoPriv SET vigencia = 'No vigente' WHERE id = ?";
+        const updateCurrentSql = "UPDATE avisopriv SET vigencia = 'No vigente' WHERE id = ?";
         await db.query(updateCurrentSql, [id]);
 
-        const getCurrentVersionSql = "SELECT version FROM avisoPriv WHERE id = ?";
+        const getCurrentVersionSql = "SELECT version FROM avisopriv WHERE id = ?";
         db.query(getCurrentVersionSql, [id], async (err, result) => {
             if (err) {
                 return res.status(500).json({ message: "Error en el servidor" });
@@ -84,7 +84,7 @@ const updateAvisoPriv = async (req, res) => {
             const currentVersion = parseInt(result[0].version);
             const newVersion = currentVersion + 1;
 
-            const insertSql = "INSERT INTO avisoPriv (titulo, contenido, vigencia, fecha_creac, fecha_vigen, version, estado) VALUES (?, ?, ?, NOW(), ?, ?, 'en proc')";
+            const insertSql = "INSERT INTO avisopriv (titulo, contenido, vigencia, fecha_creac, fecha_vigen, version, estado) VALUES (?, ?, ?, NOW(), ?, ?, 'en proc')";
             db.query(insertSql, [titulo, contenido, 'Vigente', fecha_vigen, newVersion], (err) => {
                 if (err) {
                     return res.status(500).json({ message: "Ocurrió un error inesperado: " + err });
@@ -99,7 +99,7 @@ const updateAvisoPriv = async (req, res) => {
 
 const deleteAvisoPriv = async (req, res) => {
     const id = req.params.id;
-    const sql = "UPDATE avisoPriv SET vigencia = 'No vigente', estado = 'eliminado' WHERE id = ?";
+    const sql = "UPDATE avisopriv SET vigencia = 'No vigente', estado = 'eliminado' WHERE id = ?";
 
     db.query(sql, [id], (err, result) => {
         if (err) {
@@ -113,7 +113,7 @@ const deleteAvisoPriv = async (req, res) => {
 };
 
 const getCurrentAvisosPriv = async (req, res) => {
-    const sql = "SELECT * FROM avisoPriv WHERE vigencia = 'Vigente'";
+    const sql = "SELECT * FROM avisopriv WHERE vigencia = 'Vigente'";
     db.query(sql, (err, result) => {
         if (err) {
             return res.status(500).json({ message: "Error en el servidor" });

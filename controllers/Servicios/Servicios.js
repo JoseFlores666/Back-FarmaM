@@ -31,6 +31,43 @@ const getServicios = async (req, res) => {
     });
 };
 
+const getServicioById = (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+      SELECT 
+          s.id,
+          s.nombre,
+          s.descripcion,
+          s.imagen,
+          s.costo,
+          s.descuento,
+          COUNT(ds.doctor_id) AS cantidad_doctores
+      FROM 
+          servicios s
+      LEFT JOIN 
+          doctor_servicios ds ON ds.servicio_id = s.id
+      WHERE 
+          s.id = ?
+      GROUP BY 
+          s.id, s.nombre, s.descripcion, s.imagen, s.costo, s.descuento
+  `;
+
+  db.query(sql, [id], (err, result) => {
+      if (err) {
+          console.error('Error al obtener el servicio por ID:', err);
+          return res.status(500).json({ message: "Error en el servidor" });
+      }
+
+      if (result.length === 0) {
+          return res.status(404).json({ message: "Servicio no encontrado" });
+      }
+
+      return res.json(result[0]);
+  });
+};
+
+
 const getServiciosAsignadosCount = (req, res) => {
     const { coddoc } = req.params;
 
@@ -247,4 +284,4 @@ const asignarServiciosDoctor = (req, res) => {
 
 
 
-module.exports = { getServicios, crearServicios, updateServicios, deleteServicios, asignarServiciosDoctor,getServiciosAsignadosCount,getServiciosDelDoctor };
+module.exports = {getServicioById, getServicios, crearServicios, updateServicios, deleteServicios, asignarServiciosDoctor,getServiciosAsignadosCount,getServiciosDelDoctor };

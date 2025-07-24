@@ -27,7 +27,7 @@ const { getRecetas, createRecetas, updateRecetas, deleteRecetas, getRecetasByPac
 const { getActuExpe, deleteActuExpe } = require('../controllers/Citas/ActuaExpediente');
 const { loginDoc } = require('../controllers/Login/authLoginDoctor');
 const { getHorarioEmpresa, crearHorarioEmpresa, updateHorarioEmpresa, deleteHorarioEmpresa } = require('../controllers/Perfil-Empresa/HorarioEmpresa');
-const { getServicios, crearServicios, updateServicios, deleteServicios, asignarServiciosDoctor, getServiciosConDoctores, getServiciosAsignadosCount, getServiciosDelDoctor } = require('../controllers/Servicios/Servicios');
+const { getServicios, crearServicios, updateServicios, deleteServicios, asignarServiciosDoctor, getServiciosConDoctores, getServiciosAsignadosCount, getServiciosDelDoctor, getServicioById } = require('../controllers/Servicios/Servicios');
 const { getValores, updateValores, createValor, deleteValor } = require('../controllers/Servicios/Valores');
 const { getPerfilbyid, updateperfilbyid } = require('../controllers/Perfil-Empresa/PerfilUsuario');
 const { sendCorreo } = require('../controllers/Contactanos');
@@ -110,6 +110,7 @@ router.delete('/deleteServicios/:id', deleteServicios);
 router.post('/asignarServiciosDoctor/:coddoc', asignarServiciosDoctor);
 router.get('/getServiciosAsignadosCount/:coddoc', getServiciosAsignadosCount);
 router.get('/getServiciosDelDoctor/:coddoc', getServiciosDelDoctor);
+router.get("/getServicios/:id", getServicioById);
 
 //CRUD enlaces
 router.get('/getEnlaces', getEnlaces);
