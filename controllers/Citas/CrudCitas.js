@@ -103,7 +103,6 @@ const cancelarCita = (req, res) => {
 
 const generarCitas = async (req, res) => {
     const { coddoc, codhor, hora_inicio, hora_fin } = req.body;
-
     if (!coddoc || !codhor || !hora_inicio || !hora_fin) {
         return res.status(400).json({ error: 'Faltan datos requeridos' });
     }

@@ -12,7 +12,7 @@ const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondici
 const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/Perfil-Empresa/CrudEnlaces');
 const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo, createLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
 const { getEmpresa, updateEmpresa } = require('../controllers/Perfil-Empresa/CrudEmpresa');
-const { getEmpresaChat, obtAviso, obtContacto, obtDeslinde, obtEnlaces, obtEslogan, obtHorario, obtInfoEmpresaCompleta, obtLogos, obtMision, obtNombreEmpresa, obtNosotros, obtPoliticas, obtServicios, obtTerminos, obtValores, obtVision, obtenerDoctoresConEspecialidad, obtServiciosDet, obtServiciosDoctor, loginAlexa, obtCitasUsuario } =require('../controllers/chatbot/alexa');
+const { getEmpresaChat, obtAviso, obtContacto, obtDeslinde, obtEnlaces, obtEslogan, obtHorario, obtInfoEmpresaCompleta, obtLogos, obtMision, obtNombreEmpresa, obtNosotros, obtPoliticas, obtServicios, obtTerminos, obtValores, obtVision, obtenerDoctoresConEspecialidad, obtServiciosDet, obtServiciosDoctor, loginAlexa, obtCitasUsuario } = require('../controllers/chatbot/alexa');
 const { getContactInfo, upsertContactInfo } = require('../controllers/Perfil-Empresa/CrudContact');
 const { createAudit, getAuditLogs } = require('../controllers/Perfil-Empresa/CrudAuditoria');
 const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../controllers/Monitor-Incidencias/CrudUsuariosBlock');
@@ -32,11 +32,14 @@ const { getValores, updateValores, createValor, deleteValor } = require('../cont
 const { getPerfilbyid, updateperfilbyid } = require('../controllers/Perfil-Empresa/PerfilUsuario');
 const { sendCorreo } = require('../controllers/Contactanos');
 const { generarTokenWear, vincularWear, desvincularWear } = require('../controllers/wearos/wearOsAuth');
-const { getNotiById } = require('../controllers/Notifications/Notification');
+const { getNotiById, marcarNotiLeida, marcarTodasNotiLeidas, eliminarNoti, eliminarTodasNoti } = require('../controllers/Notifications/Notification');
 const { getAvisosPriv, createAvisoPriv, updateAvisoPriv, deleteAvisoPriv, getCurrentAvisosPriv } = require('../controllers/Doc-Regulatorio/CRUDAvisoPriv');
 const { getNoticias, deleteNoticia, updateNoticia, addNoticia } = require('../controllers/Perfil-Empresa/noticias');
 const upload = require('../middlewares/upload');
 const { consultaCsv } = require('../controllers/Citas/Predict');
+const { guardarDescuento, puedeGirar } = require('../controllers/Cliente/ruletaDesc');
+const { getAllRuletas, getRuletaById, createRuleta, updateRuleta, deleteRuleta, createOferta, updateOferta, deleteOferta, insertDataWheel, getWheels, getWheelById, updateWheelById, deleteWheelById, getWheelActive, getOfertById, getColorById } = require('../controllers/Cliente/ruleta');
+const { getCitasByPacienteId } = require('../controllers/Citas/crudCitasByUserId');
 
 router.post('/login', login);
 router.get('/session', consultaSesion);
@@ -44,6 +47,8 @@ router.post('/logout', cerrarSesion);
 
 router.post('/register', validateRegister, register);
 router.post('/verifyOtp', verifyOtp);
+
+//App Movil
 
 // Gestión De Usuarios
 router.get('/getUsuariosAll', getUsuariosAll);
@@ -153,18 +158,22 @@ router.put('/upsertContactInfo', upsertContactInfo);
 
 //CrudDoc
 router.get('/getDoc', getDoc)
-router.post('/createDoc',upload.single('imagen'), createDoc)
-router.put('/updateDoc/:id',upload.single('imagen'), updateDoc);
+router.post('/createDoc', upload.single('imagen'), createDoc)
+router.put('/updateDoc/:id', upload.single('imagen'), updateDoc);
 router.delete('/deleteDoc/:id', deleteDoc)
 
 router.post('/loginDoc', loginDoc);
 router.post('/upsertCostosDoctor', upsertCostosDoctor);
 
 
-//CrudCitas
+//CrudCitasDoc
 router.get('/getCitas', getCitas)
 router.get('/getCitasById/:coddoc', getCitasById)
 router.put('/cancelarCita', cancelarCita)
+
+//CrudCitasUser
+router.get('/getCitasByPacienteId/:codpaci', getCitasByPacienteId)
+
 
 //Crud reservaciones
 router.put('/reservarCita', reservarCita)
@@ -192,6 +201,10 @@ router.post('/desvincular', desvincularWear);
 
 //Notificaciones
 router.get('/getNotiById/:codpaci', getNotiById)
+router.put('/notiLeida/:id', marcarNotiLeida);
+router.put('/notiLeidas/:codpaci', marcarTodasNotiLeidas);
+router.delete('/deleteNoti/:id', eliminarNoti);
+router.delete('/deleteNotisAll/:codpaci', eliminarTodasNoti);
 
 //CrudHorario
 router.get('/getHorario', getHorarios)
@@ -238,12 +251,26 @@ router.delete('/deleteActuExpe/:id', deleteActuExpe);
 router.get('/alexa/contacto', obtContacto);
 router.get('/alexa/servicios', obtServicios);
 router.get('/alexa/obtServDet', obtServiciosDet);
-router.get('/alexa/obtDoc',obtenerDoctoresConEspecialidad);
-router.get('/alexa/serviciosDoctor/:coddoc',obtServiciosDoctor)
+router.get('/alexa/obtDoc', obtenerDoctoresConEspecialidad);
+router.get('/alexa/serviciosDoctor/:coddoc', obtServiciosDoctor)
 router.post('/alexa/loginAlexa', loginAlexa);
 router.get('/alexa/citas/:usuario', obtCitasUsuario);
 
 //consulta csv PM3
 router.get('/consultaCsv', consultaCsv);
+
+//ruleta
+router.post('/ruleta/insertDataWheel',upload.single("imagen"), insertDataWheel);
+router.put('/ruleta/updateWheelById/:id',upload.single("imagen"), updateWheelById);
+
+router.get('/ruleta/getWheels', getWheels);
+router.get('/ruleta/getWheelById/:id', getWheelById);
+router.delete('/ruleta/deleteWheelById/:id', deleteWheelById)
+router.get('/ruleta/getWheelActive', getWheelActive);
+router.get('/ruleta/getOfertById/:id', getOfertById);
+router.get('/ruleta/getColorById/:id', getColorById);
+
+router.post('/ruleta/insertDiscountWheel', guardarDescuento);
+router.get('/ruleta/puedeGirar/:id_usuario', puedeGirar);
 
 module.exports = router;

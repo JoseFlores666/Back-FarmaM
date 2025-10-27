@@ -134,98 +134,142 @@ const reemplazarCita = (req, res) => {
 
 
 const deleteListaEspera = async (req, res) => {
-    const { id } = req.params;
-    try {
-        db.query('DELETE FROM lista_espera WHERE id = ?', [id], (err, result) => {
-            if (err) {
-                console.error('Error al eliminar la cita:', err);
-                return res.status(500).json({ error: 'Error al eliminar la cita' });
-            }
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ message: "Cita no encontrada" });
-            }
-            res.json({ message: 'Cita eliminada con éxito' });
-        });
-    } catch (error) {
-        console.error('Error en el servidor:', error);
-        res.status(500).json({ error: 'Error en el servidor' });
-    }
+  const { id } = req.params;
+  try {
+    db.query('DELETE FROM lista_espera WHERE id = ?', [id], (err, result) => {
+      if (err) {
+        console.error('Error al eliminar la cita:', err);
+        return res.status(500).json({ error: 'Error al eliminar la cita' });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Cita no encontrada" });
+      }
+      res.json({ message: 'Cita eliminada con éxito' });
+    });
+  } catch (error) {
+    console.error('Error en el servidor:', error);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
 };
-
 const reservarCita = (req, res) => {
-    const { id, codpaci, motivoCita, servicios } = req.body;
-    const io = req.app.get('io');
+  const { id, codpaci, motivoCita, servicios, total } = req.body;
+  const io = req.app.get('io');
 
-    if (!id || !codpaci || !motivoCita) {
-        return res.status(400).json({ message: 'Faltan datos requeridos' });
+  console.log(req.body);
+
+  if (!id || !codpaci || !motivoCita || total == null) {
+    return res.status(400).json({ message: 'Faltan datos requeridos (id, codpaci, motivo o total)' });
+  }
+
+  if (!Array.isArray(servicios) || servicios.length === 0 || servicios.length > 2) {
+    return res.status(400).json({ message: "Debes seleccionar entre 1 y 2 servicios" });
+  }
+
+  // 🔹 Primero verificamos si el usuario tiene un descuento activo
+  const sqlDescuento = `SELECT * FROM ruleta_descuentos WHERE id_usuario = ? AND activo = 1 LIMIT 1`;
+  db.query(sqlDescuento, [codpaci], (err, resultDesc) => {
+    if (err) {
+      console.error('Error al verificar descuento:', err);
+      return res.status(500).json({ message: 'Error al verificar descuento' });
     }
 
-    if (!Array.isArray(servicios) || servicios.length === 0 || servicios.length > 2) {
-        return res.status(400).json({ message: "Debes seleccionar entre 1 y 2 servicios" });
+    let totalFinal = parseFloat(total);
+    let descuentoAplicado = "Sin descuento";
+
+    if (resultDesc.length > 0) {
+      const descuento = resultDesc[0];
+      descuentoAplicado = descuento.premio;
+
+      // 🔸 Aplicar el descuento según el tipo
+      if (descuento.premio === "Cita Gratis") {
+        totalFinal = 0;
+      } else if (descuento.porcentaje_descuento > 0) {
+        totalFinal = totalFinal - (totalFinal * (descuento.porcentaje_descuento / 100));
+      }
+
+      // 🔸 Marcar el descuento como usado
+      const sqlUpdateDescuento = `UPDATE ruleta_descuentos SET activo = 0 WHERE id_descuento = ?`;
+      db.query(sqlUpdateDescuento, [descuento.id_descuento], (err2) => {
+        if (err2) console.error('Error al actualizar descuento:', err2);
+      });
     }
 
+    // 🔹 Verificamos que la cita esté disponible
     const sqlSelect = `SELECT * FROM citas WHERE id = ? AND estado = 'Disponible'`;
     db.query(sqlSelect, [id], (err, resultSelect) => {
-        if (err) {
-            console.error('Error al verificar la cita:', err);
-            return res.status(500).json({ message: 'Error al verificar la cita' });
-        }
+      if (err) {
+        console.error('Error al verificar la cita:', err);
+        return res.status(500).json({ message: 'Error al verificar la cita' });
+      }
 
-        if (resultSelect.length === 0) {
-            const titulo = 'Agregado a lista de espera';
-            const mensaje = 'La cita ya fue reservada. Has sido añadido a la lista de espera.';
+      if (resultSelect.length === 0) {
+        const titulo = 'Agregado a lista de espera';
+        const mensaje = 'La cita ya fue reservada. Has sido añadido a la lista de espera.';
 
-            io.to(`paciente_${codpaci}`).emit("notificacion:nueva", { titulo, mensaje });
+        io.to(`paciente_${codpaci}`).emit("notificacion:nueva", { titulo, mensaje });
 
-            const insertSql = `INSERT INTO notificaciones (codpaci, titulo, mensaje) VALUES (?, ?, ?)`;
-            db.query(insertSql, [codpaci, titulo, mensaje], (err) => {
-                if (err) console.error('Error al insertar notificación:', err);
-            });
-
-            return res.status(409).json({ message: mensaje });
-        }
-
-        const sql = `
-            UPDATE citas 
-            SET codpaci = ?, motivo_cita = ?, estado = 'Reservada' 
-            WHERE id = ? AND estado = 'Disponible'
-        `;
-
-        db.query(sql, [codpaci, motivoCita, id], (err, result) => {
-            if (err) {
-                console.error('Error al reservar la cita:', err);
-                return res.status(500).json({ message: 'Error al reservar la cita' });
-            }
-
-            if (result.affectedRows === 0) {
-                return res.status(409).json({ message: 'La cita ya fue reservada por otro paciente.' });
-            }
-
-            // Insertar servicios
-            const insertSql = `INSERT INTO cita_servicio (cita_id, servicio_id) VALUES ?`;
-            const values = servicios.map(sid => [id, sid]);
-
-            db.query(insertSql, [values], (insertErr) => {
-                if (insertErr) {
-                    console.error("Error al guardar los servicios:", insertErr);
-                    return res.status(500).json({ message: "Cita reservada, pero ocurrió un error al guardar los servicios" });
-                }
-
-                const titulo = "Cita reservada";
-                const mensaje = "Tu cita ha sido reservada con éxito.";
-
-                io.to(`paciente_${codpaci}`).emit("notificacion:nueva", { titulo, mensaje });
-
-                const insertNoti = `INSERT INTO notificaciones (codpaci, titulo, mensaje) VALUES (?, ?, ?)`;
-                db.query(insertNoti, [codpaci, titulo, mensaje], (err) => {
-                    if (err) console.error('Error al insertar notificación:', err);
-                });
-
-                return res.json({ message: 'Cita y servicios reservados correctamente' });
-            });
+        const insertSql = `INSERT INTO notificaciones (codpaci, titulo, mensaje) VALUES (?, ?, ?)`;
+        db.query(insertSql, [codpaci, titulo, mensaje], (err) => {
+          if (err) console.error('Error al insertar notificación:', err);
         });
+
+        return res.status(409).json({ message: mensaje });
+      }
+
+      // 🔹 Actualizamos la cita agregando el total (ya con descuento si aplica)
+      const sql = `
+        UPDATE citas 
+        SET codpaci = ?, motivo_cita = ?, estado = 'Reservada', total = ? 
+        WHERE id = ? AND estado = 'Disponible'
+      `;
+
+      db.query(sql, [codpaci, motivoCita, totalFinal, id], (err, result) => {
+        if (err) {
+          console.error('Error al reservar la cita:', err);
+          return res.status(500).json({ message: 'Error al reservar la cita' });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(409).json({ message: 'La cita ya fue reservada por otro paciente.' });
+        }
+
+        // 🔹 Insertar los servicios de la cita
+        const insertSql = `INSERT INTO cita_servicio (cita_id, servicio_id) VALUES ?`;
+        const values = servicios.map(sid => [id, sid]);
+
+        db.query(insertSql, [values], (insertErr) => {
+          if (insertErr) {
+            console.error("Error al guardar los servicios:", insertErr);
+            return res.status(500).json({ message: "Cita reservada, pero ocurrió un error al guardar los servicios" });
+          }
+
+          // 🔹 Notificación al paciente
+          const titulo = "Cita reservada";
+          const mensaje =
+            descuentoAplicado !== "Sin descuento"
+              ? `Tu cita ha sido reservada con éxito. Se aplicó el descuento: ${descuentoAplicado}.`
+              : "Tu cita ha sido reservada con éxito.";
+
+          io.to(`paciente_${codpaci}`).emit("notificacion:nueva", { titulo, mensaje });
+
+          const insertNoti = `INSERT INTO notificaciones (codpaci, titulo, mensaje) VALUES (?, ?, ?)`;          
+          db.query(insertNoti, [codpaci, titulo, mensaje], (err) => {
+            if (err) console.error('Error al insertar notificación:', err);
+          });
+
+          // 🔹 Respuesta final
+          return res.json({
+            message: 'Cita y servicios reservados correctamente con total registrado',
+            totalFinal,
+            descuentoAplicado
+          });
+        });
+      });
     });
+  });
 };
+
+
 
 const agregarListaEspera = (req, res) => {
   const { codcita, codpaci, motivo_consulta, servicios } = req.body;
@@ -261,7 +305,6 @@ const agregarListaEspera = (req, res) => {
         return res.status(500).json({ message: 'Error al guardar los servicios' });
       }
 
-      // Notificación al paciente
       const titulo = 'Agregado a lista de espera';
       const mensaje = 'Has sido agregado a la lista de espera para la cita seleccionada.';
 
@@ -308,13 +351,12 @@ const checkCitaPendiente = (req, res) => {
     }
   });
 };
-
 const cancelarYEliminarCita = (req, res) => {
   const { id, motivoCancelacion } = req.body;
-  const io = req.app.get('io');
+  const io = req.app.get("io");
 
   if (!id || !motivoCancelacion) {
-    return res.status(400).json({ message: 'Faltan datos requeridos' });
+    return res.status(400).json({ message: "Faltan datos requeridos" });
   }
 
   // 1. Obtener codpaci de la cita
@@ -322,26 +364,26 @@ const cancelarYEliminarCita = (req, res) => {
 
   db.query(sqlGetCita, [id], (err, resultCita) => {
     if (err) {
-      console.error('Error al obtener la cita:', err);
-      return res.status(500).json({ message: 'Error al obtener la cita' });
+      console.error("Error al obtener la cita:", err);
+      return res.status(500).json({ message: "Error al obtener la cita" });
     }
 
     if (resultCita.length === 0) {
-      return res.status(404).json({ message: 'Cita no encontrada' });
+      return res.status(404).json({ message: "Cita no encontrada" });
     }
 
     const codpaci = resultCita[0].codpaci;
 
-    // 2. Obtener pacientes en lista de espera (antes de borrar)
+    // 2. Obtener pacientes en lista de espera
     const sqlListaEspera = `SELECT codpaci FROM lista_espera WHERE codcita = ?`;
 
     db.query(sqlListaEspera, [id], (err, listaEspera) => {
       if (err) {
-        console.error('Error al consultar lista de espera:', err);
-        return res.status(500).json({ message: 'Error en servidor' });
+        console.error("Error al consultar lista de espera:", err);
+        return res.status(500).json({ message: "Error en servidor" });
       }
 
-      // 3. Notificación al paciente cuya cita fue cancelada
+      // 3. Notificar al paciente principal
       const tituloPaciente = "Cita cancelada y eliminada";
       const mensajePaciente = `Tu cita fue cancelada por el siguiente motivo: ${motivoCancelacion}`;
 
@@ -365,32 +407,43 @@ const cancelarYEliminarCita = (req, res) => {
           titulo: tituloLista,
           mensaje: mensajeLista,
         });
-
         db.query(insertNotiSql, [codpaci, tituloLista, mensajeLista]);
       });
 
-      // 5. Borrar lista de espera
-      const sqlBorrarListaEspera = `DELETE FROM lista_espera WHERE codcita = ?`;
-      db.query(sqlBorrarListaEspera, [id], (err) => {
+      // 5. Eliminar dependencias antes de borrar la cita
+      const sqlEliminarCitaServicio = `DELETE FROM cita_servicio WHERE cita_id = ?`;
+      db.query(sqlEliminarCitaServicio, [id], (err) => {
         if (err) {
-          console.error('Error al eliminar lista de espera:', err);
-          return res.status(500).json({ message: 'Error al limpiar lista de espera' });
+          console.error("Error al eliminar registros en cita_servicio:", err);
+          return res.status(500).json({ message: "Error al eliminar dependencias de la cita" });
         }
 
-        // 6. Eliminar la cita
-        const sqlEliminar = `DELETE FROM citas WHERE id = ?`;
-        db.query(sqlEliminar, [id], (err) => {
+        // 6. Eliminar lista de espera
+        const sqlBorrarListaEspera = `DELETE FROM lista_espera WHERE codcita = ?`;
+        db.query(sqlBorrarListaEspera, [id], (err) => {
           if (err) {
-            console.error('Error al eliminar la cita:', err);
-            return res.status(500).json({ message: 'Error al eliminar la cita' });
+            console.error("Error al eliminar lista de espera:", err);
+            return res.status(500).json({ message: "Error al limpiar lista de espera" });
           }
 
-          return res.json({ message: 'Cita eliminada y notificaciones enviadas' });
+          // 7. Finalmente eliminar la cita
+          const sqlEliminarCita = `DELETE FROM citas WHERE id = ?`;
+          db.query(sqlEliminarCita, [id], (err) => {
+            if (err) {
+              console.error("Error al eliminar la cita:", err);
+              return res.status(500).json({ message: "Error al eliminar la cita" });
+            }
+
+            return res.json({
+              message: "Cita eliminada correctamente y notificaciones enviadas.",
+            });
+          });
         });
       });
     });
   });
 };
+
 
 const getServiciosDeCita = (req, res) => {
   const { codcita } = req.params;
@@ -414,4 +467,4 @@ const getServiciosDeCita = (req, res) => {
 
 
 
-module.exports = {getServiciosDeCita, reservarCita,agregarListaEspera,checkCitaPendiente,getListaEspera,reemplazarCita,deleteListaEspera,cancelarYEliminarCita };
+module.exports = { getServiciosDeCita, reservarCita, agregarListaEspera, checkCitaPendiente, getListaEspera, reemplazarCita, deleteListaEspera, cancelarYEliminarCita };

@@ -39,7 +39,8 @@ const allowedOrigins = [
     'https://farma-medic.vercel.app',
     'https://localhost',
     'http://127.0.0.1:5001',
-    'https://pm3flask.onrender.com'
+    'https://pm3flask.onrender.com',
+    'https://58e435eee38f.ngrok-free.app'
 ];
 
 app.use(

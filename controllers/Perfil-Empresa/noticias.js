@@ -141,9 +141,4 @@ const deleteNoticia = (req, res) => {
     });
 };
 
-module.exports = {
-    getNoticias,
-    addNoticia,
-    updateNoticia,
-    deleteNoticia,
-};
+module.exports = {getNoticias,addNoticia,updateNoticia,deleteNoticia,};

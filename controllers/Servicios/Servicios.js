@@ -12,7 +12,6 @@ const getServicios = async (req, res) => {
             s.descripcion,
             s.imagen,
             s.costo,
-            s.descuento,
             COUNT(ds.doctor_id) AS cantidad_doctores
         FROM 
             servicios s
@@ -41,7 +40,6 @@ const getServicioById = (req, res) => {
           s.descripcion,
           s.imagen,
           s.costo,
-          s.descuento,
           COUNT(ds.doctor_id) AS cantidad_doctores
       FROM 
           servicios s
@@ -50,7 +48,7 @@ const getServicioById = (req, res) => {
       WHERE 
           s.id = ?
       GROUP BY 
-          s.id, s.nombre, s.descripcion, s.imagen, s.costo, s.descuento
+          s.id, s.nombre, s.descripcion, s.imagen, s.costo
   `;
 
   db.query(sql, [id], (err, result) => {
@@ -93,7 +91,8 @@ const getServiciosDelDoctor = (req, res) => {
         SELECT 
             s.id,
             s.nombre,
-            s.descripcion
+            s.descripcion,
+            s.costo
         FROM 
             servicios s
         INNER JOIN 
@@ -107,15 +106,15 @@ const getServiciosDelDoctor = (req, res) => {
             console.error('Error al obtener servicios del doctor:', err);
             return res.status(500).json({ message: 'Error en el servidor' });
         }
-        return res.json(result); // Esto se usa en setServiciosAsignados() en el frontend
+        return res.json(result);
     });
 };
 
 const crearServicios = async (req, res) => {
-  const { nombre, descripcion, id_usuario, costo, descuento } = req.body;
+  const { nombre, descripcion, id_usuario, costo } = req.body;
   const file = req.file;
 
-  if (!nombre || !descripcion || !file || costo === undefined || descuento === undefined || !id_usuario) {
+  if (!nombre || !descripcion || !file || costo === undefined || !id_usuario) {
     return res.status(400).json({ message: "Todos los campos son obligatorios, incluyendo la imagen y id_usuario" });
   }
 
@@ -124,14 +123,14 @@ const crearServicios = async (req, res) => {
     const imagenUrl = file.path;        // URL segura generada por multer-storage-cloudinary
     const public_id = file.filename;    // public_id generado por Cloudinary (equivale a 'filename')
 
-    const sql = "INSERT INTO servicios (nombre, descripcion, imagen, public_id, costo, descuento) VALUES (?, ?, ?, ?, ?, ?)";
-    db.query(sql, [nombre, descripcion, imagenUrl, public_id, costo, descuento], (err, result) => {
+    const sql = "INSERT INTO servicios (nombre, descripcion, imagen, public_id, costo) VALUES (?, ?, ?, ?, ?)";
+    db.query(sql, [nombre, descripcion, imagenUrl, public_id, costo], (err, result) => {
       if (err) {
         console.error('Error al insertar servicio:', err);
         return res.status(500).json({ message: "Error en el servidor" });
       }
 
-      const newData = { id: result.insertId, nombre, descripcion, imagen: imagenUrl, costo, descuento };
+      const newData = { id: result.insertId, nombre, descripcion, imagen: imagenUrl, costo };
       const oldData = JSON.stringify({ message: "N/A" });
 
       createAudit(id_usuario, "CREATE", "servicios", oldData, JSON.stringify(newData));
@@ -145,7 +144,7 @@ const crearServicios = async (req, res) => {
 };
 const updateServicios = async (req, res) => {
   const { id } = req.params;
-  const { nombre, descripcion, id_usuario, costo, descuento } = req.body;
+  const { nombre, descripcion, id_usuario, costo } = req.body;
   const nuevaImagen = req.file;
 
   if (!id_usuario) {
@@ -176,10 +175,10 @@ const updateServicios = async (req, res) => {
 
     const updateSql = `
       UPDATE servicios 
-      SET nombre = ?, descripcion = ?, imagen = ?, public_id = ?, costo = ?, descuento = ?
+      SET nombre = ?, descripcion = ?, imagen = ?, public_id = ?, costo = ?
       WHERE id = ?
     `;
-    const params = [nombre, descripcion, imagenUrl, public_id, costo, descuento, id];
+    const params = [nombre, descripcion, imagenUrl, public_id, costo, id];
 
     db.query(updateSql, params, (err) => {
       if (err) return res.status(500).json({ message: "Error al actualizar servicio" });
@@ -190,8 +189,7 @@ const updateServicios = async (req, res) => {
         descripcion,
         imagen: imagenUrl,
         public_id,
-        costo,
-        descuento
+        costo
       };
 
       createAudit(id_usuario, "UPDATE", "servicios", JSON.stringify(oldData), JSON.stringify(newData));

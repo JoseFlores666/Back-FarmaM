@@ -21,6 +21,7 @@ const getPerfilbyid = (req, res) => {
         return res.json(result[0]); 
     });
 };
+
 const updateperfilbyid = (req, res) => {
     const { id } = req.params;
     const { 
