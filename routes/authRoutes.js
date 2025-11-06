@@ -51,6 +51,7 @@ router.post('/verifyOtp', verifyOtp);
 //App Movil
 
 
+
 // Gestión De Usuarios
 router.get('/getUsuariosAll', getUsuariosAll);
 router.put('/bloquearUsuario/:id', bloquearUsuario);
