@@ -21,13 +21,13 @@ const insertDataWheel = (req, res) => {
 
     // Desactivar otras si esta está activa
     if (isActive === "1" || isActive === 1) {
-      db.query("UPDATE tblRuleta SET isActive = 0", (err) => {
+      db.query("UPDATE tblruleta SET isActive = 0", (err) => {
         if (err) console.error("Error desactivando otras ruletas:", err);
       });
     }
 
     const sqlRuleta =
-      "INSERT INTO tblRuleta (nombre, imagen, public_id, isActive) VALUES (?, ?, ?, ?)";
+      "INSERT INTO tblruleta (nombre, imagen, public_id, isActive) VALUES (?, ?, ?, ?)";
     const values = [nombre, imagenUrl, publicId, isActive];
 
     db.query(sqlRuleta, values, (err, result) => {
@@ -40,7 +40,7 @@ const insertDataWheel = (req, res) => {
 
       // Insertar colores
       colores.forEach((color) => {
-        db.query("INSERT INTO tblColores (ruleta_id, color) VALUES (?, ?)", [
+        db.query("INSERT INTO tblcolores (ruleta_id, color) VALUES (?, ?)", [
           ruletaId,
           color,
         ]);
@@ -49,7 +49,7 @@ const insertDataWheel = (req, res) => {
       // Insertar ofertas
       ofertas.forEach((oferta) => {
         db.query(
-          "INSERT INTO tblOfertas (ruleta_id, oferta, colorTexto) VALUES (?, ?, ?)",
+          "INSERT INTO tblofertas (ruleta_id, oferta, colorTexto) VALUES (?, ?, ?)",
           [ruletaId, oferta.option, oferta.textColor || "#000000"]
         );
       });
@@ -66,7 +66,7 @@ const insertDataWheel = (req, res) => {
 
 // GET /ruleta/getWheels
 const getWheels = (req, res) => {
-  db.query("SELECT * FROM tblRuleta", (err, result) => {
+  db.query("SELECT * FROM tblruleta", (err, result) => {
     if (err) return res.status(500).json({ error: "Error al obtener ruletas" });
     res.json(result);
   });
@@ -76,16 +76,16 @@ const getWheels = (req, res) => {
 const getWheelById = (req, res) => {
   const { id } = req.params;
 
-  db.query("SELECT * FROM tblRuleta WHERE id = ?", [id], (err, resultRuleta) => {
+  db.query("SELECT * FROM tblruleta WHERE id = ?", [id], (err, resultRuleta) => {
     if (err) return res.status(500).json({ error: "Error al obtener ruleta" });
     if (resultRuleta.length === 0) return res.status(404).json({ error: "Ruleta no encontrada" });
 
     const ruleta = resultRuleta[0];
 
-    db.query("SELECT * FROM tblColores WHERE ruleta_id = ?", [id], (err, resultColores) => {
+    db.query("SELECT * FROM tblcolores WHERE ruleta_id = ?", [id], (err, resultColores) => {
       if (err) return res.status(500).json({ error: "Error al obtener colores" });
 
-      db.query("SELECT * FROM tblOfertas WHERE ruleta_id = ?", [id], (err, resultOfertas) => {
+      db.query("SELECT * FROM tblofertas WHERE ruleta_id = ?", [id], (err, resultOfertas) => {
         if (err) return res.status(500).json({ error: "Error al obtener ofertas" });
 
         res.json({ ...ruleta, colores: resultColores, ofertas: resultOfertas });
@@ -105,7 +105,7 @@ const updateWheelById = async (req, res) => {
 
     // Buscar public_id actual
     const [rows] = await new Promise((resolve, reject) => {
-      db.query("SELECT public_id FROM tblRuleta WHERE id = ?", [id], (err, result) =>
+      db.query("SELECT public_id FROM tblruleta WHERE id = ?", [id], (err, result) =>
         err ? reject(err) : resolve(result)
       );
     });
@@ -127,7 +127,7 @@ const updateWheelById = async (req, res) => {
     // Desactivar otras si se activa
     if (isActive === "1" || isActive === 1) {
       await new Promise((resolve, reject) => {
-        db.query("UPDATE tblRuleta SET isActive = 0 WHERE id <> ?", [id], (err) =>
+        db.query("UPDATE tblruleta SET isActive = 0 WHERE id <> ?", [id], (err) =>
           err ? reject(err) : resolve()
         );
       });
@@ -137,10 +137,10 @@ const updateWheelById = async (req, res) => {
     let sql, params;
     if (imagenUrl && newPublicId) {
       sql =
-        "UPDATE tblRuleta SET nombre = ?, imagen = ?, public_id = ?, isActive = ? WHERE id = ?";
+        "UPDATE tblruleta SET nombre = ?, imagen = ?, public_id = ?, isActive = ? WHERE id = ?";
       params = [nombre, imagenUrl, newPublicId, isActive, id];
     } else {
-      sql = "UPDATE tblRuleta SET nombre = ?, isActive = ? WHERE id = ?";
+      sql = "UPDATE tblruleta SET nombre = ?, isActive = ? WHERE id = ?";
       params = [nombre, isActive, id];
     }
 
@@ -150,23 +150,23 @@ const updateWheelById = async (req, res) => {
 
     // Colores
     await new Promise((resolve, reject) => {
-      db.query("DELETE FROM tblColores WHERE ruleta_id = ?", [id], (err) =>
+      db.query("DELETE FROM tblcolores WHERE ruleta_id = ?", [id], (err) =>
         err ? reject(err) : resolve()
       );
     });
     colores.forEach((color) => {
-      db.query("INSERT INTO tblColores (ruleta_id, color) VALUES (?, ?)", [id, color]);
+      db.query("INSERT INTO tblcolores (ruleta_id, color) VALUES (?, ?)", [id, color]);
     });
 
     // Ofertas
     await new Promise((resolve, reject) => {
-      db.query("DELETE FROM tblOfertas WHERE ruleta_id = ?", [id], (err) =>
+      db.query("DELETE FROM tblofertas WHERE ruleta_id = ?", [id], (err) =>
         err ? reject(err) : resolve()
       );
     });
     ofertas.forEach((oferta) => {
       db.query(
-        "INSERT INTO tblOfertas (ruleta_id, oferta, colorTexto) VALUES (?, ?, ?)",
+        "INSERT INTO tblofertas (ruleta_id, oferta, colorTexto) VALUES (?, ?, ?)",
         [id, oferta.option, oferta.textColor || "#000000"]
       );
     });
@@ -181,8 +181,7 @@ const updateWheelById = async (req, res) => {
 const deleteWheelById = (req, res) => {
   const { id } = req.params;
 
-  // 1. Obtener public_id de la ruleta
-  db.query("SELECT public_id FROM tblRuleta WHERE id = ?", [id], (err, result) => {
+  db.query("SELECT public_id FROM tblruleta WHERE id = ?", [id], (err, result) => {
     if (err) {
       console.error("Error al consultar la ruleta:", err);
       return res.status(500).json({ error: "Error al consultar la ruleta" });
@@ -196,13 +195,13 @@ const deleteWheelById = (req, res) => {
 
     const eliminarRuleta = () => {
       // Eliminar colores y ofertas primero
-      db.query("DELETE FROM tblColores WHERE ruleta_id = ?", [id], (err) => {
+      db.query("DELETE FROM tblcolores WHERE ruleta_id = ?", [id], (err) => {
         if (err) return res.status(500).json({ error: "Error al eliminar colores" });
 
-        db.query("DELETE FROM tblOfertas WHERE ruleta_id = ?", [id], (err) => {
+        db.query("DELETE FROM tblofertas WHERE ruleta_id = ?", [id], (err) => {
           if (err) return res.status(500).json({ error: "Error al eliminar ofertas" });
 
-          db.query("DELETE FROM tblRuleta WHERE id = ?", [id], (err) => {
+          db.query("DELETE FROM tblruleta WHERE id = ?", [id], (err) => {
             if (err) return res.status(500).json({ error: "Error al eliminar ruleta" });
 
             res.json({ message: "Ruleta eliminada correctamente" });
@@ -211,7 +210,6 @@ const deleteWheelById = (req, res) => {
       });
     };
 
-    // 2. Eliminar imagen de Cloudinary si existe
     if (publicId) {
       cloudinary.uploader.destroy(publicId, (error, resultDestroy) => {
         if (error) {
@@ -228,10 +226,8 @@ const deleteWheelById = (req, res) => {
 };
 
 
-
-// GET /ruleta/getWheelActive
 const getWheelActive = (req, res) => {
-  const sqlRuleta = "SELECT * FROM tblRuleta WHERE isActive = 1 LIMIT 1";
+  const sqlRuleta = "SELECT * FROM tblruleta WHERE isActive = 1 LIMIT 1";
 
   db.query(sqlRuleta, (err, result) => {
     if (err) {
@@ -245,24 +241,21 @@ const getWheelActive = (req, res) => {
 
     const ruleta = result[0];
 
-    // Traer colores
-    const sqlColores = "SELECT color FROM tblColores WHERE ruleta_Id = ?";
+    const sqlColores = "SELECT color FROM tblcolores WHERE ruleta_Id = ?";
     db.query(sqlColores, [ruleta.id], (errCol, colores) => {
       if (errCol) {
         console.error("Error al obtener colores:", errCol);
         return res.status(500).json({ message: "Error en el servidor" });
       }
 
-      // Traer ofertas
       const sqlOfertas =
-        "SELECT oferta, colorTexto FROM tblOfertas WHERE ruleta_Id = ?";
+        "SELECT oferta, colorTexto FROM tblofertas WHERE ruleta_Id = ?";
       db.query(sqlOfertas, [ruleta.id], (errOf, ofertas) => {
         if (errOf) {
           console.error("Error al obtener ofertas:", errOf);
           return res.status(500).json({ message: "Error en el servidor" });
         }
 
-        // Armar respuesta completa
         return res.json({
           ...ruleta,
           colores,
@@ -275,7 +268,7 @@ const getWheelActive = (req, res) => {
 
 const getColorById = (req, res) => {
   const { id } = req.params;
-  const sql = "SELECT * FROM tblColores WHERE id = ?";
+  const sql = "SELECT * FROM tblcolores WHERE id = ?";
 
   db.query(sql, [id], (err, result) => {
     if (err) {
@@ -293,7 +286,7 @@ const getColorById = (req, res) => {
 
 const getOfertById = (req, res) => {
   const { id } = req.params;
-  const sql = "SELECT * FROM tblOfertas WHERE id = ?";
+  const sql = "SELECT * FROM tblofertas WHERE id = ?";
 
   db.query(sql, [id], (err, result) => {
     if (err) {
