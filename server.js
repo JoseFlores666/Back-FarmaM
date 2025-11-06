@@ -4,7 +4,7 @@ const fs = require('fs');
 const app = require('./app');
 const path = require('path');
 const { Server } = require('socket.io');
-const sockets=require('./sockets')
+const sockets = require('./sockets')
 
 const USE_HTTPS = process.env.USE_HTTPS === 'true';
 
@@ -27,9 +27,11 @@ const io = new Server(server, {
             'https://bina5.com',
             'http://localhost:5173',
             'https://localhost:5173',
+            'http://localhost:4173',
+            'https://localhost:4173',
             'https://farma-medic.vercel.app',
         ],
-        methods: ['GET', 'POST','UPDATE','DELETE'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
         credentials: true,
     }
 });
@@ -40,5 +42,5 @@ sockets(io)
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
-    console.log(`Servidor escuchando en el puerto ${PORT}`);
+    console.log(`Servidor escuchando en ${USE_HTTPS ? 'https' : 'http'}://localhost:${PORT}`);
 });

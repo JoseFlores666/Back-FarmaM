@@ -36,8 +36,7 @@ const getLogoActivo = async (req, res) => {
 const createLogo = (req, res) => {
   const { id_usuario } = req.body;
   const imagen = req.file;
-console.log(req.body)
-console.log(req.file)
+
   if (!id_usuario || !imagen) {
     return res.status(400).json({ message: "id_usuario e imagen son obligatorios" });
   }

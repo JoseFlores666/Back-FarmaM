@@ -18,6 +18,7 @@ const getListaEspera = (req, res) => {
     return res.json(result);
   });
 };
+
 const reemplazarCita = (req, res) => {
   const { codcita } = req.params;
 
@@ -154,8 +155,6 @@ const deleteListaEspera = async (req, res) => {
 const reservarCita = (req, res) => {
   const { id, codpaci, motivoCita, servicios, total } = req.body;
   const io = req.app.get('io');
-
-  console.log(req.body);
 
   if (!id || !codpaci || !motivoCita || total == null) {
     return res.status(400).json({ message: 'Faltan datos requeridos (id, codpaci, motivo o total)' });

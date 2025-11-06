@@ -10,9 +10,9 @@ const { getDeslindesLegales, createDeslindeLegal, updateDeslindeLegal, deleteDes
 const { getPoliticas, createPolitica, updatePolitica, deletePolitica, getCurrentPolitica } = require('../controllers/Doc-Regulatorio/CrudPoliticas');
 const { getTerminosCondiciones, createTerminosCondiciones, updateTerminosCondiciones, deleteTerminosCondiciones, getCurrentTerminos } = require('../controllers/Doc-Regulatorio/CrudTerminosYC');
 const { getEnlaces, createEnlace, updateEnlace, deleteEnlace } = require('../controllers/Perfil-Empresa/CrudEnlaces');
-const { getAllLogos, getLogoActivo, deleteLogo, uploadLogo, updateLogo, createLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
+const { getAllLogos, getLogoActivo, deleteLogo, updateLogo, createLogo } = require('../controllers/Perfil-Empresa/CrudLogo');
 const { getEmpresa, updateEmpresa } = require('../controllers/Perfil-Empresa/CrudEmpresa');
-const { getEmpresaChat, obtAviso, obtContacto, obtDeslinde, obtEnlaces, obtEslogan, obtHorario, obtInfoEmpresaCompleta, obtLogos, obtMision, obtNombreEmpresa, obtNosotros, obtPoliticas, obtServicios, obtTerminos, obtValores, obtVision, obtenerDoctoresConEspecialidad, obtServiciosDet, obtServiciosDoctor, loginAlexa, obtCitasUsuario } = require('../controllers/chatbot/alexa');
+const { getEmpresaChat, obtContacto, obtServicios, obtenerDoctoresConEspecialidad, obtServiciosDet, obtServiciosDoctor, loginAlexa, obtCitasUsuario } = require('../controllers/chatbot/alexa');
 const { getContactInfo, upsertContactInfo } = require('../controllers/Perfil-Empresa/CrudContact');
 const { createAudit, getAuditLogs } = require('../controllers/Perfil-Empresa/CrudAuditoria');
 const { getUsuariosAll, bloquearUsuario, desbloquearUsuario } = require('../controllers/Monitor-Incidencias/CrudUsuariosBlock');
@@ -27,9 +27,9 @@ const { getRecetas, createRecetas, updateRecetas, deleteRecetas, getRecetasByPac
 const { getActuExpe, deleteActuExpe } = require('../controllers/Citas/ActuaExpediente');
 const { loginDoc } = require('../controllers/Login/authLoginDoctor');
 const { getHorarioEmpresa, crearHorarioEmpresa, updateHorarioEmpresa, deleteHorarioEmpresa } = require('../controllers/Perfil-Empresa/HorarioEmpresa');
-const { getServicios, crearServicios, updateServicios, deleteServicios, asignarServiciosDoctor, getServiciosConDoctores, getServiciosAsignadosCount, getServiciosDelDoctor, getServicioById } = require('../controllers/Servicios/Servicios');
+const { getServicios, crearServicios, updateServicios, deleteServicios, asignarServiciosDoctor, getServiciosAsignadosCount, getServiciosDelDoctor, getServicioById } = require('../controllers/Servicios/Servicios');
 const { getValores, updateValores, createValor, deleteValor } = require('../controllers/Servicios/Valores');
-const { getPerfilbyid, updateperfilbyid } = require('../controllers/Perfil-Empresa/PerfilUsuario');
+const { getPerfilbyid, updatePerfilDatos, updatePerfilFoto } = require('../controllers/Perfil-Empresa/PerfilUsuario');
 const { sendCorreo } = require('../controllers/Contactanos');
 const { generarTokenWear, vincularWear, desvincularWear } = require('../controllers/wearos/wearOsAuth');
 const { getNotiById, marcarNotiLeida, marcarTodasNotiLeidas, eliminarNoti, eliminarTodasNoti } = require('../controllers/Notifications/Notification');
@@ -38,7 +38,7 @@ const { getNoticias, deleteNoticia, updateNoticia, addNoticia } = require('../co
 const upload = require('../middlewares/upload');
 const { consultaCsv } = require('../controllers/Citas/Predict');
 const { guardarDescuento, puedeGirar } = require('../controllers/Cliente/ruletaDesc');
-const { getAllRuletas, getRuletaById, createRuleta, updateRuleta, deleteRuleta, createOferta, updateOferta, deleteOferta, insertDataWheel, getWheels, getWheelById, updateWheelById, deleteWheelById, getWheelActive, getOfertById, getColorById } = require('../controllers/Cliente/ruleta');
+const { insertDataWheel, getWheels, getWheelById, updateWheelById, deleteWheelById, getWheelActive, getOfertById, getColorById } = require('../controllers/Cliente/ruleta');
 const { getCitasByPacienteId } = require('../controllers/Citas/crudCitasByUserId');
 
 router.post('/login', login);
@@ -49,6 +49,7 @@ router.post('/register', validateRegister, register);
 router.post('/verifyOtp', verifyOtp);
 
 //App Movil
+
 
 // Gestión De Usuarios
 router.get('/getUsuariosAll', getUsuariosAll);
@@ -104,7 +105,8 @@ router.put('/updateEmpresa/:id', updateEmpresa);
 
 //CrudPerfilUsuario
 router.get('/getPerfilbyid/:id', getPerfilbyid);
-router.put('/updateperfilbyid/:id', updateperfilbyid);
+router.put('/updatePerfilDatos/:id', updatePerfilDatos);
+router.put('/updatePerfilFoto/:id', upload.single('foto'), updatePerfilFoto);
 
 //CrudServicios
 router.get('/getServicios', getServicios);
@@ -260,8 +262,8 @@ router.get('/alexa/citas/:usuario', obtCitasUsuario);
 router.get('/consultaCsv', consultaCsv);
 
 //ruleta
-router.post('/ruleta/insertDataWheel',upload.single("imagen"), insertDataWheel);
-router.put('/ruleta/updateWheelById/:id',upload.single("imagen"), updateWheelById);
+router.post('/ruleta/insertDataWheel', upload.single("imagen"), insertDataWheel);
+router.put('/ruleta/updateWheelById/:id', upload.single("imagen"), updateWheelById);
 
 router.get('/ruleta/getWheels', getWheels);
 router.get('/ruleta/getWheelById/:id', getWheelById);

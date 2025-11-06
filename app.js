@@ -40,7 +40,8 @@ const allowedOrigins = [
     'https://localhost',
     'http://127.0.0.1:5001',
     'https://pm3flask.onrender.com',
-    'https://58e435eee38f.ngrok-free.app'
+    'https://localhost:4173',
+    'http://localhost:4173',
 ];
 
 app.use(
@@ -64,7 +65,7 @@ const sessionStore = new MySQLStore({
     clearExpired: true,
     checkExpirationInterval: 900000,
     expiration: 86400000,
-    createDatabaseTable:true
+    createDatabaseTable: true
 });
 
 //true = https y si es false = http
@@ -80,9 +81,9 @@ app.use(
         saveUninitialized: false,
         cookie: {
             httpOnly: true,
-            secure: useHttps, 
-            sameSite: 'none', 
-            maxAge: 15 * 60 * 1000, 
+            secure: useHttps,
+            sameSite: 'none',
+            maxAge: 15 * 60 * 1000,
         },
     })
 );
