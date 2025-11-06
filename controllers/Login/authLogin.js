@@ -84,17 +84,12 @@ const consultaSesion = (req, res) => {
 
 
 const cerrarSesion = (req, res) => {
-    const sessionId = req.sessionID;
 
     req.session.destroy(async (err) => {
         if (err) {
             console.error(err);
             return res.status(500).json({ message: 'Error al cerrar sesión' });
         }
-
-        sessionStore.destroy(sessionId, (err) => {
-            if (err) console.error('Error al eliminar sesión manualmente:', err);
-        });
 
         res.clearCookie('connect.sid', { path: '/', sameSite: 'none', secure: true });
         res.status(200).json({ message: 'Sesión cerrada correctamente' });
