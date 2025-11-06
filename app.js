@@ -40,23 +40,22 @@ const allowedOrigins = [
     'https://localhost',
     'http://127.0.0.1:5001',
     'https://pm3flask.onrender.com',
+    'https://7b4ac76a729b.ngrok-free.app',
     'https://localhost:4173',
     'http://localhost:4173',
 ];
 
 app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn('🚫 Bloqueado por CORS:', origin);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-  })
+    cors({
+        origin: function (origin, callback) {
+            if (allowedOrigins.includes(origin) || !origin) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true,
+    })
 );
 
 const sessionStore = new MySQLStore({
