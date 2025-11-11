@@ -39,7 +39,7 @@ const upload = require('../middlewares/upload');
 const { consultaCsv } = require('../controllers/Citas/Predict');
 const { guardarDescuento, puedeGirar } = require('../controllers/Cliente/ruletaDesc');
 const { insertDataWheel, getWheels, getWheelById, updateWheelById, deleteWheelById, getWheelActive, getOfertById, getColorById } = require('../controllers/Cliente/ruleta');
-const { getCitasByPacienteId } = require('../controllers/Citas/crudCitasByUserId');
+const { getCitasByPacienteId, getListaEsperaByCitaId } = require('../controllers/Citas/crudCitasByUserId');
 
 router.post('/login', login);
 router.get('/session', consultaSesion);
@@ -148,7 +148,7 @@ router.put('/updateEmpresa/:id', updateEmpresa)
 router.get('/getValores', getValores)
 router.post('/createValor', upload.single('imagen'), createValor)
 router.put('/updateValores/:id', upload.single('imagen'), updateValores),
-    router.delete('/deleteValor/:id', deleteValor)
+router.delete('/deleteValor/:id', deleteValor)
 
 
 //CrudAuditoria 
@@ -176,7 +176,7 @@ router.put('/cancelarCita', cancelarCita)
 
 //CrudCitasUser
 router.get('/getCitasByPacienteId/:codpaci', getCitasByPacienteId)
-
+router.get('/getListaEsperaByCitaId/:codcita', getListaEsperaByCitaId)
 
 //Crud reservaciones
 router.put('/reservarCita', reservarCita)
