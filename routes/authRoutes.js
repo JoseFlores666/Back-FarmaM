@@ -23,7 +23,7 @@ const { getHorarios, createHorario, updateHorario, deleteHorario } = require('..
 const { createOpinion, updateOpinion, getOpinions, getOpinionById, deleteOpinion, updateReaction } = require('../controllers/CrudOpiniones/Opiniones');
 const { getExpediente, getExpedienteById, createExpediente, updateExpediente, deleteExpediente } = require('../controllers/Citas/ExpedienteM');
 const { reservarCita, agregarListaEspera, checkCitaPendiente, getListaEspera, reemplazarCita, deleteListaEspera, cancelarYEliminarCita, getServiciosDeCita } = require('../controllers/Citas/Reservaciones');
-const { getRecetas, createRecetas, updateRecetas, deleteRecetas, getRecetasByPacienteId, getMedicamentosByReceta } = require('../controllers/Citas/RecetasMedicas');
+const { getRecetas, createRecetas, updateRecetas, deleteRecetas, getRecetasByPacienteId, getMedicamentosByReceta, getRecetaById, getMisRecetas } = require('../controllers/Citas/RecetasMedicas');
 const { getActuExpe, deleteActuExpe } = require('../controllers/Citas/ActuaExpediente');
 const { loginDoc } = require('../controllers/Login/authLoginDoctor');
 const { getHorarioEmpresa, crearHorarioEmpresa, updateHorarioEmpresa, deleteHorarioEmpresa } = require('../controllers/Perfil-Empresa/HorarioEmpresa');
@@ -231,13 +231,15 @@ router.post('/createExpediente', createExpediente)
 router.put('/updateExpediente/:id', updateExpediente);
 router.delete('/deleteExpediente/:id', deleteExpediente);
 
-//CrudRecetas aun no funciona y lo tengo duplicado
+//CrudRecetas
 router.post('/createReceta', createRecetas)
-router.get('/getMedicamentosByReceta/:recetaId', getMedicamentosByReceta)
 router.put('/updateReceta/:id', updateRecetas);
 router.delete('/deleteReceta/:id', deleteRecetas);
-router.get('/getRecetasByPacienteId/:id', getRecetasByPacienteId);
 router.get('/getRecetas', getRecetas);
+router.get('/getRecetaById/:id', getRecetaById);
+router.get('/getMisRecetas/:id', getMisRecetas);
+
+
 router.get('/getServiciosDeCita/:codcita', getServiciosDeCita);
 
 //crud seccion de noticias
