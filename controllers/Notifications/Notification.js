@@ -57,7 +57,7 @@ const eliminarNoti = (req, res) => {
             return res.status(500).json({ message: "Error al eliminar notificación" });
         }
         return res.json({ message: "Notificación eliminada", result });
-    });
+    }); 
 };
 
 // 🔹 Eliminar todas las notificaciones de un usuario

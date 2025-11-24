@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../config/db');
+const sendNotification = require("../../utils/sendNotification");
 
 const getCitas = (req, res) => {
     const sql = `
@@ -156,7 +157,9 @@ const createCita = async (req, res) => {
                 const mensaje = `Tu cita fue registrada para el día ${fecha} a las ${hora}.`;
 
                 io.to(`paciente_${codpaci}`).emit("notificacion:nueva", { titulo, mensaje });
-
+                sendNotification(codpaci, titulo, mensaje)
+                    .then(() => console.log("📨 Notificación enviada por Firebase"))
+                    .catch((err) => console.log("❌ Error enviando push:", err));
                 const insertNotiSql = `INSERT INTO notificaciones (codpaci, titulo, mensaje) VALUES (?, ?, ?)`;
                 db.query(insertNotiSql, [codpaci, titulo, mensaje], (err3) => {
                     if (err3) {
@@ -203,6 +206,9 @@ const reagendarCita = (req, res) => {
             mensaje,
         });
 
+        sendNotification(codpaci, titulo, mensaje)
+            .then(() => console.log("📨 Notificación enviada por Firebase"))
+            .catch((err) => console.log("❌ Error enviando push:", err));
         // Guardar la notificación en la base de datos
         const insertSql = `
             INSERT INTO notificaciones (codpaci, titulo, mensaje)
@@ -260,6 +266,10 @@ const editarDatosCita = (req, res) => {
                 const mensaje = "Tu cita fue actualizada por el personal médico.";
 
                 io.to(`paciente_${codpaci}`).emit("notificacion:nueva", { titulo, mensaje });
+
+                sendNotification(codpaci, titulo, mensaje)
+                    .then(() => console.log("📨 Notificación enviada por Firebase"))
+                    .catch((err) => console.log("❌ Error enviando push:", err));
 
                 const insertNoti = `INSERT INTO notificaciones (codpaci, titulo, mensaje) VALUES (?, ?, ?)`;
                 db.query(insertNoti, [codpaci, titulo, mensaje], (err3) => {
@@ -321,4 +331,4 @@ const deleteAllCitasByDoctor = (req, res) => {
 
 
 
-module.exports = {getCitas, generarCitas, createCita, reagendarCita, editarDatosCita, deleteCita, deleteAllCitasByDoctor, getCitasById, cancelarCita };
+module.exports = { getCitas, generarCitas, createCita, reagendarCita, editarDatosCita, deleteCita, deleteAllCitasByDoctor, getCitasById, cancelarCita };

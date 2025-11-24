@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middlewares/authMiddleware');
 const { login, consultaSesion, cerrarSesion } = require('../controllers/Login/authLogin');
+const { loginGoogle } = require('../controllers/Login/authGoogle');
 const register = require('../controllers/Register/Register');
 const verifyOtp = require('../controllers/verifyOtp');
 const { validateRegister } = require('../middlewares/validators');
@@ -40,6 +41,7 @@ const { consultaCsv } = require('../controllers/Citas/Predict');
 const { guardarDescuento, puedeGirar } = require('../controllers/Cliente/ruletaDesc');
 const { insertDataWheel, getWheels, getWheelById, updateWheelById, deleteWheelById, getWheelActive, getOfertById, getColorById } = require('../controllers/Cliente/ruleta');
 const { getCitasByPacienteId, getListaEsperaByCitaId } = require('../controllers/Citas/crudCitasByUserId');
+const { fcmTokens } = require('../controllers/Notifications/fcmTokens');
 
 router.post('/login', login);
 router.get('/session', consultaSesion);
@@ -49,8 +51,8 @@ router.post('/register', validateRegister, register);
 router.post('/verifyOtp', verifyOtp);
 
 //App Movil
-
-
+router.post('/login-google', loginGoogle);
+router.post('/fcmTokens',fcmTokens)
 
 // Gestión De Usuarios
 router.get('/getUsuariosAll', getUsuariosAll);
@@ -148,7 +150,7 @@ router.put('/updateEmpresa/:id', updateEmpresa)
 router.get('/getValores', getValores)
 router.post('/createValor', upload.single('imagen'), createValor)
 router.put('/updateValores/:id', upload.single('imagen'), updateValores),
-router.delete('/deleteValor/:id', deleteValor)
+    router.delete('/deleteValor/:id', deleteValor)
 
 
 //CrudAuditoria 

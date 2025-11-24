@@ -14,7 +14,6 @@ const verifyOtp = async (req, res) => {
   const { correo, otp } = req.body;
 
   try {
-    // Buscar el usuario por correo
     db.query(
       'SELECT id FROM usuarios WHERE correo = ?',
       [correo],
@@ -30,7 +29,6 @@ const verifyOtp = async (req, res) => {
 
         const userId = results[0].id;
 
-        // Buscar el código de verificación en la base de datos
         db.query(
           'SELECT * FROM auth_codes WHERE user_id = ? AND code = ? AND used = FALSE',
           [userId, otp],
@@ -46,12 +44,10 @@ const verifyOtp = async (req, res) => {
 
             const authCode = codeResults[0];
 
-            // Verificar si el código ha expirado
             if (new Date(authCode.expires_at) < new Date()) {
               return res.status(400).json({ message: 'El código ha expirado.' });
             }
 
-            // Marcar el código como usado
             db.query(
               'UPDATE auth_codes SET used = TRUE WHERE id = ?',
               [authCode.id],
@@ -61,7 +57,6 @@ const verifyOtp = async (req, res) => {
                   return res.status(500).json({ message: 'Error al actualizar el código de verificación.' });
                 }
 
-                // Marcar al usuario como verificado
                 db.query(
                   'UPDATE seguridad SET isVerified = 1 WHERE user_id = ?',
                   [userId],
